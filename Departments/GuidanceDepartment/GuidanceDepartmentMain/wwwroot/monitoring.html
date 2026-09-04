@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student monitoring | Guidance</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body data-page="monitoring">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">GD</span><span>Guidance Department</span></a>
+    <nav class="menu" aria-label="Primary navigation">
+      <a href="/">Overview</a><a href="/dashboard.html">Dashboard</a><a class="active" href="/monitoring.html">Students</a><a href="/triage.html">Triage</a><a href="/appointments.html">Appointments</a><a href="/case-notes.html">Case notes</a>
+    </nav>
+    <span class="role-chip">Counselor / Guidance</span>
+  </header>
+  <main>
+    <section class="intro compact-intro">
+      <p class="eyebrow">Guidance operations / Student follow-up</p>
+      <h1>Student monitoring.</h1>
+      <p class="lede">Keep follow-up visible without exposing more student detail than the workflow needs.</p>
+    </section>
+    <section class="monitoring-toolbar" aria-label="Student monitoring filters">
+      <label>View<select data-monitoring-filter><option value="all">All monitored students</option><option value="urgent">Urgent follow-up</option><option value="overdue">Follow-up overdue</option></select></label>
+      <span class="muted">4 students in Guidance scope / local preview data</span>
+    </section>
+    <section class="monitoring-panel" aria-labelledby="monitoring-title">
+      <div class="panel-heading"><div><p class="eyebrow">Follow-up register</p><h2 id="monitoring-title">Students needing attention</h2></div><span class="section-count" data-monitoring-count>4 visible</span></div>
+      <div class="monitoring-list" data-monitoring-table></div>
+    </section>
+  </main>
+  <footer>Guidance Department <span>Prototype / local data only</span></footer>
+  <script src="/prototype.js"></script>
+</body>
+</html>

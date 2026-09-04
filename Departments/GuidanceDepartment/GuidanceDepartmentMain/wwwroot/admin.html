@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Department settings | Guidance</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body data-page="admin">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">GD</span><span>Guidance Department</span></a>
+    <nav class="menu" aria-label="Primary navigation"><a href="/">Overview</a><a href="/dashboard.html">Dashboard</a><a href="/triage.html">Triage</a><a class="active" href="/admin.html">Settings</a></nav>
+    <span class="role-chip">Department admin</span>
+  </header>
+  <main>
+    <section class="intro compact-intro"><p class="eyebrow">Department configuration</p><h1>Keep the handoffs clear.</h1><p class="lede">A small control surface for Guidance staff, routing, and escalation contacts.</p></section>
+    <section class="settings-layout">
+      <form class="surface-form settings-form" data-settings-form>
+        <div class="panel-heading"><div><p class="eyebrow">Identity</p><h2>Department profile</h2></div><span class="secure-badge">Guidance only</span></div>
+        <label>Department name<input value="Guidance Department"></label>
+        <label>Default response target<select><option>Within 2 business days</option><option>Within 1 business day</option><option>Same day</option></select></label>
+        <label>Escalation contact<input value="guidance-lead@campus.example"></label>
+        <button class="primary" type="submit">Save preview settings</button><span class="muted" data-form-status>Preview only. No settings are stored.</span>
+      </form>
+      <section class="dashboard-panel"><div class="panel-heading"><div><p class="eyebrow">Routing</p><h2>Referral destinations</h2></div><span class="section-count">3 active</span></div><ul class="settings-list"><li><span><strong>Financial Aid</strong><small>Funding, holds, and aid appeals</small></span><button class="icon-button" type="button" aria-label="Edit Financial Aid">Edit</button></li><li><span><strong>Health Services</strong><small>Health-related support handoffs</small></span><button class="icon-button" type="button" aria-label="Edit Health Services">Edit</button></li><li><span><strong>Registrar</strong><small>Enrollment and records questions</small></span><button class="icon-button" type="button" aria-label="Edit Registrar">Edit</button></li></ul><button class="secondary-button" type="button">Add destination</button></section>
+    </section>
+  </main>
+  <footer>Guidance Department <span>Prototype / local data only</span></footer>
+  <script src="/prototype.js"></script>
+</body>
+</html>

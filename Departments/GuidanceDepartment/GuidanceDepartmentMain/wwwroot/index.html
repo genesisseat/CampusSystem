@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guidance Department</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">GD</span>
+      <span>Guidance Department</span>
+    </a>
+    <nav class="menu" aria-label="Primary navigation">
+      <a class="active" href="#overview">Overview</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/request.html">Requests</a>
+      <a href="/triage.html">Triage</a>
+      <a href="/appointments.html">Appointments</a>
+      <a href="/case-notes.html">Case notes</a>
+      <a href="/resources.html">Resources</a>
+    </nav>
+    <a class="api-link" href="/openapi/v1.json" target="_blank" rel="noreferrer">OpenAPI</a>
+  </header>
+
+  <main>
+    <section class="intro" id="overview">
+      <p class="eyebrow">Student support workspace</p>
+      <h1>Clearer paths to the right guidance.</h1>
+      <p class="lede">Manage requests, triage support, and keep every interaction accountable.</p>
+      <div class="status"><span class="status-dot"></span>Service online <span class="status-divider">/</span> Development</div>
+    </section>
+
+    <section class="workspace" id="requests" aria-labelledby="requests-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Workspace</p>
+          <h2 id="requests-title">Support operations</h2>
+        </div>
+        <span class="section-count">04 areas</span>
+      </div>
+      <div class="menu-grid">
+        <a class="menu-card card-coral" href="/openapi/v1.json#tag/Student-Requests">
+          <span class="card-index">01</span>
+          <span class="card-icon">SR</span>
+          <strong>Student requests</strong>
+          <span>Review and create guidance requests</span>
+          <span class="card-arrow">-&gt;</span>
+        </a>
+        <a class="menu-card card-teal" href="/dashboard.html">
+          <span class="card-index">02</span>
+          <span class="card-icon">CT</span>
+          <strong>Counselor dashboard</strong>
+          <span>Prioritize the support inbox</span>
+          <span class="card-arrow">-&gt;</span>
+        </a>
+        <a class="menu-card card-gold" href="/openapi/v1.json#tag/Auth">
+          <span class="card-index">03</span>
+          <span class="card-icon">AU</span>
+          <strong>Access and identity</strong>
+          <span>Sign in and manage sessions</span>
+          <span class="card-arrow">-&gt;</span>
+        </a>
+        <a class="menu-card card-ink" href="/admin.html">
+          <span class="card-index">04</span>
+          <span class="card-icon">AD</span>
+          <strong>Department settings</strong>
+          <span>Manage routing and escalation contacts</span>
+          <span class="card-arrow">-&gt;</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="quick-links" id="tools" aria-labelledby="tools-title">
+      <div>
+        <p class="eyebrow">Quick links</p>
+        <h2 id="tools-title">Developer tools</h2>
+      </div>
+      <div class="tool-links">
+        <a href="/openapi/v1.json">API schema <span>-&gt;</span></a>
+        <a href="/WeatherForecast">Health sample <span>-&gt;</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>Guidance Department <span>Build 2026.08</span></footer>
+</body>
+</html>
