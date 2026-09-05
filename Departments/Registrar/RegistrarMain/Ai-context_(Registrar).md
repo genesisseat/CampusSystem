@@ -8,8 +8,8 @@ Registrar owns course browsing, registration, academic records, verification, an
 
 Use the task type to decide the correct layer:
 
-- Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Keep registration and records flows visual-only until an approved contract exists.
-- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, models, DTOs, `Program.cs`, and related server files only when the task explicitly requires course, enrollment, transcript, or record processing.
+- Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Registrar's data lives in its own `RegistrarDbContext`, under the `registrar` SQL schema, within the shared `CampusSystemDb` database. The shared project supplies only the `Student` identity model.
+- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, `Models/`, `Data/RegistrarDbContext.cs`, `Migrations/`, `Program.cs`, and related server files only when the task explicitly requires course, enrollment, transcript, or record processing. The shared `Student` identity type lives at `Shared/CampusSystem.Data/Models/Student.cs` and should not be copied into Registrar.
 - AI model rule: if the request does not clearly ask for backend logic, assume it is a UI edit and do not add persistence, form submission, or live academic-data processing.
 
 ## AI maintenance manual
@@ -49,10 +49,13 @@ Before making a change in a future session, read this file first and compare it 
 - `Services/` = business logic and integrations
 - `Contracts/` = interfaces and shared DTOs
 - `Models/` = domain objects and data contracts
+- `Data/RegistrarDbContext.cs` = Registrar-owned EF Core context
+- `Migrations/` = Registrar-owned migration history for the `registrar` schema
+- `Shared/CampusSystem.Data/Models/Student.cs` = shared identity model mapped to `dbo.Students`
 
 ## Interface-only editing guidance
 
-This project is UI-first and intentionally does not include live registration or record processing. Interface edits should remain presentation-focused and avoid backend wiring.
+This project owns the persistence foundation for course, enrollment, transcript, verification, and records data. `RegistrarDbContext` owns only `registrar.*` tables; it references `dbo.Students` from `CampusSystem.Data` and excludes that table from Registrar migrations. Interface edits should remain presentation-focused unless a task explicitly requests backend wiring.
 
 ### Files to edit for UI changes
 
@@ -76,7 +79,7 @@ This project is UI-first and intentionally does not include live registration or
 
 ## Department UI
 
-The following Razor Pages are UI-only presentation placeholders with no database, service, API, or form-submit behavior:
+The following Razor Pages currently remain presentation placeholders; the database foundation is available, but their controllers/services and form handlers are intentionally deferred:
 
 - `/Courses`: course catalog and browse page
 - `/Registration`: registration and schedule builder
@@ -84,13 +87,36 @@ The following Razor Pages are UI-only presentation placeholders with no database
 - `/Verification`: enrollment verification request form
 - `/Records`: records request and status tracker
 
-The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`. Keep registration, verification, transcript, and records controls non-functional until the owning team defines contracts and authorization rules.
+The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`.
+
+## Persistence Implementation
+
+- `RegistrarDbContext` is registered in `Program.cs` with the `CampusSystemDb` connection-string key.
+- Registrar uses SQL Server LocalDB during development and stores its migration history in `registrar.__EFMigrationsHistory_Registrar`.
+- `Course`, `Enrollment`, `TranscriptEntry`, `VerificationRequest`, and `RecordsRequest` are Registrar-owned models mapped to the `registrar` schema.
+- Each student-owned record has a foreign key to the shared `CampusSystem.Data.Models.Student` identity model. `dbo.Students` is mapped with `ExcludeFromMigrations()` so Registrar can query it but cannot create, alter, or drop it.
+- `Enrollment.RowVersion` is a SQL Server rowversion concurrency token.
+
+From `Departments/Registrar/RegistrarMain`, review and apply Registrar migrations with:
+
+```powershell
+dotnet ef migrations add <MigrationName> --context RegistrarDbContext
+dotnet ef database update --context RegistrarDbContext
+```
+
+Do not add Registrar entities, `DbSet` properties, or migrations to `Shared/CampusSystem.Data`. That shared project contains the identity model only. Do not create a second physical database or a second Registrar connection-string key.
 
 ## Change Rules
 
-- Do not add persistence or service calls without approved registrar contracts.
+- Registrar owns `RegistrarDbContext`, its own `Migrations/` folder, and the `registrar` schema inside the shared `CampusSystemDb` database. The Registrar migration history table is `registrar.__EFMigrationsHistory_Registrar`; do not assume there is one shared migration history.
+- Registrar does not modify `CampusSystem.Data` except when the shared `Student` model itself needs a field, which requires cross-team coordination.
+- Use the shared `CampusSystemDb` connection-string key. Direct calls into another department's controllers, services, or API endpoints are not approved.
+- Derive `StudentId` from authenticated claims; never accept it from request payloads.
 - Protect academic records and enrollment verification with authorization and audit controls before backend wiring.
+- Treat `Enrollment.RowVersion` as a concurrency token and handle update conflicts.
+- Keep the shared LocalDB connection string in local configuration or user-secrets outside source control for non-local environments.
 - Preserve existing Razor Pages behavior and department namespace.
-- Run `dotnet build RegistrarMain.csproj` after UI changes.
+- Run `dotnet build RegistrarMain.csproj` after UI changes or data changes.
+- From the workspace root, run `.\Check-GuidanceServices.ps1 -ProjectPath .\Departments\Registrar\RegistrarMain` for Registrar, or `.\Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments -Build` for the full health check.
 
 ##

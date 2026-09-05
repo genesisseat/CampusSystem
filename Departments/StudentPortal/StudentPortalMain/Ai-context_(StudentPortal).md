@@ -71,6 +71,8 @@ This project is the student-facing shell for the campus experience. UI changes s
 - No API calls that submit document requests or support/helpdesk tickets without an approved backend contract
 - No live library-status data pulls until a contract with the Library system is approved
 - No live announcements/notifications feed and no live calendar/events data pulls until a contract with the source system (registrar, faculty messaging, events office) is approved
+- The shared `CampusSystemDb` is the approved physical store for this kind of cross-department read once the source department (Library, Registrar, etc.) has its own schema populated. A future StudentPortal context may query another department's schema, such as `library.*`, but must mark those entities `ExcludeFromMigrations()` so it does not own that schema. Until a given source department completes its build, treat its data as still unavailable — the contract is the populated schema, not just the database's existence.
+- Direct calls into another department's controllers, services, or API endpoints remain unapproved; a shared physical database does not create a shared API surface.
 
 ### Approved UI behavior
 

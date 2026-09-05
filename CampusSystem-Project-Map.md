@@ -1,4 +1,4 @@
-# Campus System Project Map
+v# Campus System Project Map
 
 ## Overview
 
@@ -10,6 +10,8 @@ This workspace is a campus-wide multi-department system managed as a single VS C
 flowchart TD
     A[CampusSystem workspace] --> B[Maintenance]
     A --> C[Departments]
+    A --> O[Shared]
+    O --> P[CampusSystem.Data]
     C --> D[FacultyPortal]
     C --> E[Finance]
     C --> F[GuidanceDepartment]
@@ -43,6 +45,8 @@ flowchart TD
   - [Departments/Library](Departments/Library)
   - [Departments/Registrar](Departments/Registrar)
   - [Departments/StudentPortal](Departments/StudentPortal)
+
+- [Shared/CampusSystem.Data](Shared/CampusSystem.Data) — shared `Student` identity model only; department schemas and migrations remain in their owning projects
 
 - [Requirements](Requirements)
 - [SQL](SQL)

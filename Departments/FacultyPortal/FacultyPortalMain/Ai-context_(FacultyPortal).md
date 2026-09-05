@@ -66,6 +66,8 @@ The interface in this project is intentionally frontend-only. When modifying the
 - No service calls that change live records
 - No auth or role enforcement logic that is not already in the app shell
 - No form submissions that are not explicitly approved as UI-only placeholders
+- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `FacultyPortalDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 ### Approved UI behavior
 

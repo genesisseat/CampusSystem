@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using RegistrarMain.Contracts;
+using RegistrarMain.Data;
 using RegistrarMain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Guidance services
 builder.Services.AddControllers();
+builder.Services.AddDbContext<RegistrarDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("CampusSystemDb"),
+        sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Registrar", "registrar")));
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
 builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
 builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();

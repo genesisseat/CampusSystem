@@ -19,6 +19,7 @@ The workspace root is `X:\CampusSystem`.
 | `SQL` | Database scripts |
 | `BackupFolder` | Backup material; do not treat as active source |
 | `Maintenance` | Local health dashboard, launcher, and AI context |
+| `Shared/CampusSystem.Data` | Shared `Student` identity model only — not a shared database layer |
 | `Check-GuidanceServices.ps1` | Integrity checker for one project or all departments |
 | `Install-GuidanceServices.ps1` | Copies and registers the Guidance service layer |
 | `SERVICES.md` | Service behavior and production-readiness notes |
@@ -36,7 +37,9 @@ Every department currently targets `net10.0`, uses nullable reference types and 
 | Registrar | `Departments/Registrar/RegistrarMain` | `RegistrarMain` |
 | StudentPortal | `Departments/StudentPortal/StudentPortalMain` | `StudentPortalMain` |
 
-GuidanceDepartment is the source/reference implementation for the service layer. The other five projects contain namespace-adjusted copies. Do not assume a shared class library exists; service source files are currently duplicated per project.
+GuidanceDepartment is the source/reference implementation for the service layer. The other five projects contain namespace-adjusted copies, so the service layer remains duplicated per project. `Shared/CampusSystem.Data` contains only the shared `Student` identity model. Each department owns its own `DbContext`, its own entity models, and its own migration history inside its own project, scoped to its own SQL schema, all pointed at the one physical `CampusSystemDb` database. No department should need to edit another department's `DbContext` or another department's migrations. The only shared file teams routinely reference is the `Student` model itself.
+
+Cross-department reads may query another department's schema in the same physical database only after that source department has populated it. Department controllers, services, and API endpoints remain separately owned; do not call another department's API surface directly.
 
 ## Shared Service Layer
 

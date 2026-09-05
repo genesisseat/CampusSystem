@@ -67,6 +67,8 @@ This department is a frontend-only dashboard shell. If the task is to modify the
 - No database writes or service-layer invocation
 - No live financial calculations tied to production data
 - No hidden API calls that would process real payment data
+- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `FinanceDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 ### Approved UI behavior
 

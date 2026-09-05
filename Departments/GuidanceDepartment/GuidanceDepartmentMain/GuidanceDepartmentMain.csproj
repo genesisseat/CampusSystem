@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\CampusSystem.Data\CampusSystem.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="GuidanceDepartmentMain.Tests\**" />
     <Content Remove="GuidanceDepartmentMain.Tests\**" />
     <EmbeddedResource Remove="GuidanceDepartmentMain.Tests\**" />

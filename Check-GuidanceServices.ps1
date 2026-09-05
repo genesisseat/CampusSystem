@@ -45,7 +45,10 @@ $packageNames = @(
     'CsvHelper'
     'FluentValidation.AspNetCore'
     'Polly'
+)
+$efPackageNames = @(
     'Microsoft.EntityFrameworkCore'
+    'Microsoft.EntityFrameworkCore.SqlServer'
 )
 
 $departmentPaths = [ordered]@{
@@ -115,13 +118,18 @@ function Test-Project {
         Add-Result "DI $marker" $present $(if ($present) { 'Registered' } else { 'Missing registration' })
     }
 
+    $projectContents = Get-Content -LiteralPath $projectFile.FullName -Raw
     foreach ($package in $packageNames) {
-        $present = (Get-Content -LiteralPath $projectFile.FullName -Raw).Contains(('Include="{0}"' -f $package))
+        $present = $projectContents.Contains(('Include="{0}"' -f $package))
         Add-Result "Package $package" $present $(if ($present) { 'Referenced' } else { 'Missing reference' })
     }
 
+    $efPackage = @($efPackageNames | Where-Object { $projectContents.Contains(('Include="{0}"' -f $_)) })
+    $efPackagePresent = $efPackage.Count -gt 0
+    Add-Result 'Package Microsoft.EntityFrameworkCore or provider' $efPackagePresent $(if ($efPackagePresent) { "Referenced: $($efPackage -join ', ')" } else { 'Missing EF Core package or provider' })
+
     if ($Build) {
-        & dotnet build $projectFile.FullName --no-restore --nologo
+        $buildOutput = & dotnet build $projectFile.FullName --no-restore --nologo 2>&1
         $buildPassed = $LASTEXITCODE -eq 0
         Add-Result 'dotnet build' $buildPassed $(if ($buildPassed) { 'Build succeeded' } else { "Build failed with exit code $LASTEXITCODE" })
     }

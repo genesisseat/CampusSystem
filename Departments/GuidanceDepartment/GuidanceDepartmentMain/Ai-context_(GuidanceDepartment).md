@@ -89,6 +89,8 @@ This project includes a UI layer and a backend API surface, but the static inter
 - No service calls that create or update real guidance records
 - No form submissions to live endpoints without an approved contract
 - No bypass of the existing authorization boundaries for case notes or counselor workflows
+- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `GuidanceDepartmentDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 
 ### Approved UI behavior
@@ -123,5 +125,6 @@ The pages reuse `wwwroot/styles.css` and are linked from the Guidance home page.
 
 - Preserve the static-file/controller architecture; do not convert to Razor Pages without an explicit decision.
 - Do not add persistence or service calls to placeholder pages without an approved contract.
+- When GuidanceDepartment's persistence is wired up, its data belongs in its own `GuidanceDepartmentDbContext` and `guidance` schema inside the shared `CampusSystemDb` database, replacing `InMemoryGuidanceRequestStore` — not a shared context or separate physical database. Case notes and audit events require an explicit authorization/durability decision before this migration happens; do not move them automatically as part of a routine schema addition.
 - Preserve security boundaries around student requests, counselor triage, and case notes.
 - Read `DEVELOPER_SETUP.md` and `SERVICES.md` before service or API changes.
