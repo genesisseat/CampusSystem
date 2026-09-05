@@ -13,21 +13,20 @@
     <header class="site-header">
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">RegistrarMain</a>
+                <a class="navbar-brand" asp-area="" asp-page="/Index"><span class="brand-mark">R</span> Registrar</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1 align-items-center">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Registrar tools</a><ul class="dropdown-menu"><li><a class="dropdown-item" asp-page="/Courses">Course catalog</a></li><li><a class="dropdown-item" asp-page="/Registration">Registration</a></li><li><a class="dropdown-item" asp-page="/Transcript">Transcript</a></li><li><a class="dropdown-item" asp-page="/Verification">Enrollment verification</a></li><li><a class="dropdown-item" asp-page="/Records">Records requests</a></li></ul></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-page="/Courses">Courses</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-page="/Registration">Registration</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-page="/Transcript">Transcript</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-page="/Verification">Verification</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-area="" asp-page="/Records">Records</a></li>
                     </ul>
+                    <span class="environment-badge">Student services</span>
                 </div>
             </div>
         </nav>

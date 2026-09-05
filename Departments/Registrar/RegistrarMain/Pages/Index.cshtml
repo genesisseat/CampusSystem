@@ -4,33 +4,36 @@
     ViewData["Title"] = "Registrar Services";
 }
 
-<section class="page-heading">
+<div class="registrar-page" data-page="dashboard">
+<section class="page-heading dashboard-heading">
     <div>
-        <div class="eyebrow">Campus Services</div>
-        <h1>Registrar Services</h1>
+        <div class="eyebrow">Registrar workspace</div>
+        <h1>Academic records, kept moving.</h1>
+        <p class="page-intro">Your central place to browse courses, manage enrollment, and request official records.</p>
     </div>
+    <a class="btn btn-primary" asp-page="/Registration">Build your schedule</a>
 </section>
 
-<div class="surface p-4 p-md-5">
-    <p class="lead mb-4">Access registration and academic records tools through a clean, service-focused dashboard.</p>
+<section class="metric-grid" aria-label="Registrar summary">
+    <article class="metric-card metric-card-teal"><span>Current enrollment</span><strong data-metric="enrollment">--</strong><small>active courses</small></article>
+    <article class="metric-card metric-card-gold"><span>Available courses</span><strong data-metric="courses">--</strong><small>in the catalog</small></article>
+    <article class="metric-card metric-card-coral"><span>Requests in progress</span><strong data-metric="requests">--</strong><small>verification and records</small></article>
+</div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <div class="surface p-3 h-100">
-                <h2>Student records</h2>
-                <ul class="mb-0">
-                    <li>Registration status</li>
-                    <li>Transcript requests</li>
-                    <li>Verification checks</li>
-                    <li>Academic records</li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="surface p-3 h-100">
-                <h2>Office updates</h2>
-                <p class="mb-0">Controls and data integrations remain placeholder-only until confirmation from the registrar team and system owners.</p>
-            </div>
+<section class="dashboard-grid">
+    <div class="surface feature-panel">
+        <div class="panel-heading"><div><span class="eyebrow">Your academic tools</span><h2>Pick up where you left off</h2></div><span class="status-pill" data-api-status>Checking API</span></div>
+        <div class="action-list">
+            <a href="/Courses" class="action-row"><span><b>Course catalog</b><small>Search the current course offering</small></span><span class="arrow">→</span></a>
+            <a href="/Registration" class="action-row"><span><b>Registration</b><small>Review or change your current schedule</small></span><span class="arrow">→</span></a>
+            <a href="/Transcript" class="action-row"><span><b>Transcript</b><small>View semester-by-semester grades</small></span><span class="arrow">→</span></a>
         </div>
     </div>
+    <div class="notice-panel">
+        <span class="eyebrow">Registrar note</span>
+        <h2>Official records, without the queue.</h2>
+        <p>Submit verification and document requests online. Status updates stay attached to your student record.</p>
+        <div class="notice-links"><a href="/Verification">Request verification</a><a href="/Records">Request a document</a></div>
+    </div>
+</section>
 </div>

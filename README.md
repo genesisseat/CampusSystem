@@ -56,6 +56,8 @@ Schemas and migrations are owned independently. Registrar currently uses:
 
 Future departments should follow the same pattern with their own context, schema, and history table.
 
+Registrar's database API is currently the first end-to-end persistence surface. Its routes cover course browsing, student registration, transcript reads, verification requests, and records requests under `/api`. The Registrar Razor Pages now provide the usable student-facing interface for those routes; other department UIs remain intentionally deferred until their own persistence builds.
+
 ## Prerequisites
 
 - Windows with PowerShell.

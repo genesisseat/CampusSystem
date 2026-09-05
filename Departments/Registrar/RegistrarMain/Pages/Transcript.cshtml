@@ -1,3 +1,7 @@
 @page
 @{ ViewData["Title"] = "Transcript"; }
-<div class="page-heading"><div><span class="eyebrow">Academic record</span><h1>Transcript</h1><p class="text-muted">Semester-grouped course and grade history.</p></div><button class="btn btn-outline-dark">Download transcript</button></div><div class="surface p-4"><h2 class="h5">Fall 2026</h2><div class="table-responsive"><table class="table"><thead><tr><th>Course</th><th>Credits</th><th>Grade</th></tr></thead><tbody><tr><td colspan="3" class="empty-state">No grades recorded.</td></tr></tbody></table></div></div>
+<div class="registrar-page" data-page="transcript">
+<section class="page-heading"><div><span class="eyebrow">Academic record</span><h1>Transcript</h1><p class="page-intro">A clear view of your completed coursework by semester.</p></div><span class="status-pill" data-api-status>Checking API</span></section>
+<section id="transcript-list" class="transcript-list" aria-live="polite"><div class="loading-state">Loading transcript<span class="loading-dots">...</span></div></section>
+<div class="alert alert-danger d-none" data-error role="alert"></div>
+</div>

@@ -66,20 +66,20 @@ This project owns the persistence foundation for course, enrollment, transcript,
 
 ### What not to add while editing the interface
 
-- No student registration persistence
-- No transcript updates or records mutations
-- No real verification submission behavior
-- No service calls tied to live academic data
+- Do not wire Razor Page forms directly to the API without an explicit UI task and review.
+- Do not move API request validation or claims-derived identity checks into client-side code.
+- Do not accept `StudentId` from Razor Page form fields or browser request bodies.
+- Do not add student-owned mutations outside the API and `RegistrarDbContext` path.
 
 ### Approved UI behavior
 
-- Use placeholder course and enrollment data to present the user flow.
-- Keep schedule-building, transcript, and records actions non-functional until the owning team approves the backend contract and authorization model.
-- Preserve the existing project structure and buttons/sections used for presentation only.
+- Use the Registrar API for live course, enrollment, transcript, verification, and records data.
+- Keep claims-derived identity and authorization enforcement on the server; the browser UI must not become the source of truth for student ownership.
+- Preserve the existing project structure and keep future UI changes focused on presentation and API integration.
 
 ## Department UI
 
-The following Razor Pages currently remain presentation placeholders; the database foundation is available, but their controllers/services and form handlers are intentionally deferred:
+The following Razor Pages are the Registrar UI surface and are wired to the Registrar API for catalog browsing, enrollment, transcript display, verification requests, and records requests:
 
 - `/Courses`: course catalog and browse page
 - `/Registration`: registration and schedule builder
@@ -88,6 +88,26 @@ The following Razor Pages currently remain presentation placeholders; the databa
 - `/Records`: records request and status tracker
 
 The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`.
+
+## API Endpoints
+
+The Registrar API is available for database and authorization testing. All endpoints require authentication; in Development, the `DevelopmentTest` scheme supplies the configured `StudentId` claim and defaults to the `Student` role. Send `X-Test-Role: Admin` only when testing the course seed endpoint.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/courses?search=` | Browse the course catalog |
+| `GET` | `/api/courses/{id}` | Read one course |
+| `POST` | `/api/courses` | Create a course; Admin role only |
+| `GET` | `/api/registrations/mine` | List the authenticated student's enrollments |
+| `POST` | `/api/registrations` | Enroll the authenticated student in a course |
+| `DELETE` | `/api/registrations/{id}?rowVersion=` | Drop an owned enrollment with optimistic concurrency |
+| `GET` | `/api/transcript/mine` | Read the authenticated student's semester-grouped transcript |
+| `GET` | `/api/verifications/mine` | List the student's verification requests |
+| `POST` | `/api/verifications` | Create a pending verification request |
+| `GET` | `/api/records/mine` | List the student's records requests |
+| `POST` | `/api/records` | Create a pending document request |
+
+The Development test identity is configured in `appsettings.Development.json`. The corresponding student must exist in `dbo.Students`; test identities must not be accepted from request bodies. Production does not register the Development test authentication scheme.
 
 ## Persistence Implementation
 
@@ -112,11 +132,12 @@ Do not add Registrar entities, `DbSet` properties, or migrations to `Shared/Camp
 - Registrar does not modify `CampusSystem.Data` except when the shared `Student` model itself needs a field, which requires cross-team coordination.
 - Use the shared `CampusSystemDb` connection-string key. Direct calls into another department's controllers, services, or API endpoints are not approved.
 - Derive `StudentId` from authenticated claims; never accept it from request payloads.
-- Protect academic records and enrollment verification with authorization and audit controls before backend wiring.
+- Protect academic records and enrollment verification with authorization and audit controls as the API expands; the current endpoints enforce authentication and student ownership, while administrative workflows remain deferred.
 - Treat `Enrollment.RowVersion` as a concurrency token and handle update conflicts.
 - Keep the shared LocalDB connection string in local configuration or user-secrets outside source control for non-local environments.
 - Preserve existing Razor Pages behavior and department namespace.
-- Run `dotnet build RegistrarMain.csproj` after UI changes or data changes.
+- Keep API writes inside `RegistrarDbContext`; do not add direct SQL or cross-department API calls.
+- Run `dotnet build RegistrarMain.csproj` after UI changes, API changes, or data changes.
 - From the workspace root, run `.\Check-GuidanceServices.ps1 -ProjectPath .\Departments\Registrar\RegistrarMain` for Registrar, or `.\Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments -Build` for the full health check.
 
 ##

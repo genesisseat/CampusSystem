@@ -59,6 +59,37 @@ body, .navbar, .dropdown-menu, .footer-shell, .site-header {
   letter-spacing: -0.04em;
 }
 
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.35rem;
+  border-radius: 8px;
+  background: var(--campus-coral);
+  color: #fff;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.environment-badge,
+.status-pill,
+.term-badge,
+.schedule-total {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: rgba(143, 198, 186, 0.2);
+  color: var(--campus-navy);
+  font: 600 0.72rem/1.1 Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.environment-badge { background: rgba(228, 179, 94, 0.22); }
+
 .nav-link {
   color: var(--campus-mute) !important;
   padding: 0.6rem 0.9rem;
@@ -138,6 +169,99 @@ main a {
 .page-heading h1 {
   margin: 0.35rem 0;
   font-weight: 650;
+}
+
+.page-intro {
+  max-width: 42rem;
+  margin: 0.7rem 0 0;
+  font-size: 1.05rem;
+}
+
+.dashboard-heading { margin-top: 1rem; }
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.metric-card {
+  min-height: 150px;
+  padding: 1.25rem;
+  border: 1px solid var(--campus-line);
+  border-top: 4px solid var(--campus-teal);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.metric-card-gold { border-top-color: var(--campus-gold); }
+.metric-card-coral { border-top-color: var(--campus-coral); }
+.metric-card span, .metric-card small { display: block; color: var(--campus-mute); }
+.metric-card strong { display: block; margin: 0.7rem 0 0.2rem; color: var(--campus-ink); font-size: 2.4rem; letter-spacing: -0.06em; }
+
+.dashboard-grid,
+.registration-layout,
+.request-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 1.25rem;
+}
+
+.feature-panel, .request-form, .request-history, .course-picker, .schedule-panel { padding: 1.35rem; }
+.panel-heading { display: flex; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 1rem; }
+.panel-heading h2, .request-form h2 { margin: 0.35rem 0 0; font-size: 1.35rem; }
+.action-list, .stack-list { display: grid; gap: 0.65rem; }
+.action-row { display: flex; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--campus-line); border-radius: 9px; color: var(--campus-ink); text-decoration: none; background: #fff; }
+.action-row:hover { border-color: var(--campus-coral); background: #fffaf7; }
+.action-row b, .action-row small { display: block; }
+.action-row b { color: var(--campus-ink); }
+.action-row small { margin-top: 0.25rem; color: var(--campus-mute); }
+.arrow { align-self: center; color: var(--campus-coral); font-size: 1.35rem; }
+.notice-panel { padding: 1.5rem; border-radius: 12px; background: var(--campus-navy); color: #fff; }
+.notice-panel h2 { margin: 0.55rem 0 0.8rem; color: #fff; font-size: 1.7rem; }
+.notice-panel p { color: rgba(255,255,255,.78); }
+.notice-links { display: grid; gap: 0.65rem; margin-top: 1.4rem; }
+.notice-links a { color: #fff; font-weight: 600; text-underline-offset: 0.2em; }
+
+.catalog-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.search-field { flex: 1; max-width: 36rem; }
+.search-field span { display: block; margin-bottom: 0.35rem; color: var(--campus-mute); font-size: 0.82rem; font-weight: 650; }
+.search-field input { width: 100%; padding: 0.85rem 1rem; border: 1px solid var(--campus-line); border-radius: 10px; background: #fff; }
+.result-count { color: var(--campus-mute); font-size: 0.86rem; }
+.course-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.course-card { display: flex; min-height: 180px; flex-direction: column; justify-content: space-between; padding: 1.2rem; border: 1px solid var(--campus-line); border-radius: 12px; background: #fff; }
+.course-code { color: var(--campus-coral); font: 650 0.78rem/1 Consolas, monospace; letter-spacing: 0.06em; }
+.course-card h2 { margin: 0.65rem 0 0.35rem; font-size: 1.2rem; }
+.course-meta { color: var(--campus-mute); font-size: 0.9rem; }
+.course-card .btn { align-self: start; margin-top: 1rem; }
+.course-picker, .schedule-panel { min-height: 420px; }
+.schedule-total { background: rgba(229,111,88,.12); color: var(--campus-coral); }
+.schedule-item, .request-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.9rem 0; border-bottom: 1px solid var(--campus-line); }
+.schedule-item:last-child, .request-item:last-child { border-bottom: 0; }
+.schedule-item strong, .request-item strong { display: block; color: var(--campus-ink); }
+.schedule-item small, .request-item small { color: var(--campus-mute); }
+.request-layout { grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.3fr); }
+.request-form { align-self: start; }
+.request-form p { margin: 0.8rem 0 1.4rem; }
+.request-history { min-height: 320px; }
+.request-status { color: var(--campus-coral); font: 650 0.75rem/1 Consolas, monospace; text-transform: uppercase; }
+.transcript-list { display: grid; gap: 1rem; }
+.transcript-term { padding: 1.25rem; border: 1px solid var(--campus-line); border-radius: 12px; background: #fff; }
+.transcript-term h2 { margin: 0 0 0.9rem; font-size: 1.25rem; }
+.transcript-term table { margin: 0; }
+.transcript-term th { color: var(--campus-mute); font-size: 0.78rem; font-weight: 650; text-transform: uppercase; }
+.transcript-term td { color: var(--campus-ink); }
+.loading-state { padding: 3rem 1rem; color: var(--campus-mute); text-align: center; }
+.loading-dots { display: inline-block; width: 1.4rem; overflow: hidden; vertical-align: bottom; }
+.empty-state { padding: 2.5rem 1rem; color: var(--campus-mute); text-align: center; }
+
+@media (max-width: 767.98px) {
+  .environment-badge { display: none; }
+  .metric-grid, .dashboard-grid, .registration-layout, .request-layout, .course-grid { grid-template-columns: 1fr; }
+  .page-heading { align-items: start; flex-direction: column; }
+  .catalog-toolbar { align-items: stretch; flex-direction: column; }
+  .course-grid { gap: 0.75rem; }
 }
 
 .eyebrow {
