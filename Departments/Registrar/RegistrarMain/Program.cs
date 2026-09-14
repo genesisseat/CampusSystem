@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using CampusSystem.Sql;
+using FluentValidation;
 using RegistrarMain.HealthAndRepair;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,13 @@ using RegistrarMain.Data;
 using RegistrarMain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var campusConnection = CampusSystemDbConnector.Resolve(
+    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
+
+builder.Services.AddDbContext<RegistrarDbContext>(options =>
+    options.UseSqlServer(campusConnection,
+        sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Registrar", "registrar")));
 
 // Add services to the container.
 // Guidance services
@@ -17,10 +25,6 @@ if (builder.Environment.IsDevelopment())
         .AddScheme<AuthenticationSchemeOptions, DevelopmentTestAuthenticationHandler>("DevelopmentTest", _ => { });
 }
 builder.Services.AddAuthorization();
-builder.Services.AddDbContext<RegistrarDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("CampusSystemDb"),
-        sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Registrar", "registrar")));
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
 builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
 builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();

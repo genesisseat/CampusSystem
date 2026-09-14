@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\..\SQL\CampusSystemDbConnector.cs" Link="SQL\CampusSystemDbConnector.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="GuidanceDepartmentMain.Tests\**" />
     <Content Remove="GuidanceDepartmentMain.Tests\**" />
     <EmbeddedResource Remove="GuidanceDepartmentMain.Tests\**" />
