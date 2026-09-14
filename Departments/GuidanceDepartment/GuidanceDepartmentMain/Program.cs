@@ -2,6 +2,7 @@ using AspNetCoreRateLimit;
 using CampusSystem.Sql;
 using FluentValidation;
 using GuidanceDepartmentMain.Contracts;
+using GuidanceDepartmentMain.Data;
 using GuidanceDepartmentMain.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 var campusConnection = CampusSystemDbConnector.Resolve(
     builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
 
-builder.Services.AddDbContextFactory<DbContext>(options =>
+builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
     options.UseSqlServer(campusConnection));
 
 // Add services to the container.

@@ -182,6 +182,38 @@ The default dashboard port is `5080`. If an older dashboard listener remains on 
 dotnet list package --vulnerable
 ```
 
+## Connecting a department to the shared campus database
+
+Each department connects to the same physical `CampusSystemDb` database, not to a separate project database. Use the shared campus connection and keep the department's schema and models inside that department's own project.
+
+### Required wiring pattern
+
+1. Confirm the department uses the shared connection string name `CampusSystemDb`.
+2. Add the connection string to that department's `appsettings.json`:
+
+```json
+"ConnectionStrings": {
+  "CampusSystemDb": "Server=localhost,1433;Database=CampusSystemDb;User Id=sa;Password=MakeItStrong!2026;TrustServerCertificate=True;Encrypt=False"
+}
+```
+
+3. Resolve the shared connection string in `Program.cs` and pass it into that department's `DbContext`.
+4. Register the department `DbContext` with `AddDbContextFactory<DepartmentDbContext>` or `AddDbContext<DepartmentDbContext>` using `UseSqlServer(campusConnection)`.
+5. Keep the department-owned entities, `DbSet`s, and migration history inside that department's project. Do not add another department's tables into a shared context file.
+6. Reuse the shared `Student` model from `Shared/CampusSystem.Data` when the data is truly campus-wide, but leave the department-specific schema and model ownership in that department's project.
+7. Validate with a targeted read query and a browser/API check before treating the feature as complete.
+
+### Example pattern
+
+```csharp
+var campusConnection = builder.Configuration.GetConnectionString("CampusSystemDb");
+
+builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
+    options.UseSqlServer(campusConnection));
+```
+
+This pattern is the standard wiring for Guidance and any future department that needs real campus data. Do not create a new database for the department unless the product requirement explicitly says the data is isolated and separate from the campus system.
+
 ## AI Change Rules
 
 1. Identify the owning department project and direct implementation before editing.
@@ -190,7 +222,8 @@ dotnet list package --vulnerable
 4. Do not overwrite user changes or backups without inspection.
 5. After edits, run the narrowest relevant checker first, then build the affected project.
 6. If changing checker output labels or dashboard API shape, update both the parser and the HTML consumer.
-7. Treat a passing integrity check as structural health only; it does not prove production persistence, external messaging, or real authentication configuration.
+7. When a department needs live data, wire it through that department's own `DbContext` to the shared `CampusSystemDb` connection; do not create a separate DB or a shared cross-department context.
+8. Treat a passing integrity check as structural health only; it does not prove production persistence, external messaging, or real authentication configuration.
 
 ## Current Validation Expectations
 

@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students | Guidance</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .students-card {
+      background: #fff;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .students-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.96rem;
+    }
+
+    .students-table th,
+    .students-table td {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      vertical-align: top;
+    }
+
+    .students-table thead th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    .students-table tbody tr:hover {
+      background: #f8fafc;
+    }
+  </style>
+</head>
+<body data-page="students">
+  <header class="topbar">
+    <a class="brand" href="/"><span class="brand-mark">GD</span><span>Guidance Department</span></a>
+    <nav class="menu" aria-label="Primary navigation">
+      <a href="/">Overview</a>
+      <a class="active" href="/students.html">Students</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/request.html">Requests</a>
+      <a href="/triage.html">Triage</a>
+      <a href="/appointments.html">Appointments</a>
+      <a href="/case-notes.html">Case notes</a>
+    </nav>
+    <span class="role-chip">Counselor / Guidance</span>
+  </header>
+
+  <main>
+    <section class="intro compact-intro">
+      <p class="eyebrow">Guidance records / Student directory</p>
+      <h1>Students</h1>
+      <p class="lede">Live student entries from the shared campus database.</p>
+    </section>
+
+    <section class="workspace" aria-labelledby="students-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Student list</p>
+          <h2 id="students-title">Registered students</h2>
+        </div>
+        <span class="section-count">Live data</span>
+      </div>
+
+      <div class="students-card">
+        <table class="students-table" aria-label="Guidance students table">
+          <thead>
+            <tr>
+              <th>Student #</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Student ID</th>
+            </tr>
+          </thead>
+          <tbody data-guidance-students-table>
+            <tr><td colspan="4">Loading student records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>Guidance Department <span>Live campus student data</span></footer>
+  <script src="/student-feed.js"></script>
+</body>
+</html>

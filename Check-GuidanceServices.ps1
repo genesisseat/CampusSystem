@@ -27,6 +27,7 @@ $serviceFiles = @(
 )
 
 $contractFiles = @('ServiceContracts.cs')
+$connectorFiles = @('CampusSystemDbConnector.cs')
 $registrationMarkers = @(
     'IGuidanceRequestStore, InMemoryGuidanceRequestStore'
     'IRefreshTokenStore, InMemoryRefreshTokenStore'
@@ -38,6 +39,9 @@ $registrationMarkers = @(
     'IPiiMaskingService, PiiMaskingService'
     'IOutboundMessageTransport, UnavailableOutboundMessageTransport'
     'INotificationService, NotificationService'
+    'CampusSystemDbConnector'
+    'CampusSystemDbConnector.Resolve'
+    'ConnectionStringName'
 )
 $packageNames = @(
     'Microsoft.AspNetCore.Authentication.JwtBearer'
@@ -84,6 +88,7 @@ function Test-Project {
     $programFile = Join-Path $Directory 'Program.cs'
     $contractsDirectory = Join-Path $Directory 'Contracts'
     $servicesDirectory = Join-Path $Directory 'Services'
+    $connectorFile = Join-Path $Directory '..\..\..\SQL\CampusSystemDbConnector.cs'
     $results = [System.Collections.Generic.List[object]]::new()
 
     function Add-Result {
@@ -105,6 +110,11 @@ function Test-Project {
         Add-Result "Service $file" (Test-Path -LiteralPath $path) $(if (Test-Path -LiteralPath $path) { 'Present' } else { 'Missing' })
     }
 
+    foreach ($file in $connectorFiles) {
+        $path = Join-Path $Directory "..\..\..\SQL\$file"
+        Add-Result "Connector $file" (Test-Path -LiteralPath $path) $(if (Test-Path -LiteralPath $path) { 'Present' } else { 'Missing' })
+    }
+
     $program = if (Test-Path -LiteralPath $programFile) { Get-Content -LiteralPath $programFile -Raw } else { '' }
     Add-Result 'Program.cs' (Test-Path -LiteralPath $programFile) $(if ($program) { 'Present' } else { 'Missing' })
 
@@ -117,6 +127,11 @@ function Test-Project {
         $present = $program.Contains($marker)
         Add-Result "DI $marker" $present $(if ($present) { 'Registered' } else { 'Missing registration' })
     }
+
+    $appSettingsPath = Join-Path $Directory 'appsettings.json'
+    $appSettings = if (Test-Path -LiteralPath $appSettingsPath) { Get-Content -LiteralPath $appSettingsPath -Raw } else { '' }
+    $sharedDbConfigured = $appSettings.Contains('"CampusSystemDb"') -and $appSettings.Contains('Server=localhost,1433')
+    Add-Result 'Shared CampusSystemDb connection string' $sharedDbConfigured $(if ($sharedDbConfigured) { 'Configured' } else { 'Missing CampusSystemDb connection string' })
 
     $projectContents = Get-Content -LiteralPath $projectFile.FullName -Raw
     foreach ($package in $packageNames) {

@@ -2,9 +2,12 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using CampusSystem.Data.Models;
 using FluentValidation;
 using GuidanceDepartmentMain.Contracts;
+using GuidanceDepartmentMain.Data;
 using GuidanceDepartmentMain.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
@@ -51,11 +54,45 @@ public sealed class ServiceTests
     }
 
     [Fact]
+    public async Task Guidance_student_feed_returns_live_student_rows()
+    {
+        var controller = new GuidanceDepartmentMain.Controllers.GuidanceStudentController(
+            new TestDbContextFactory());
+
+        var result = await controller.GetStudents(CancellationToken.None);
+        var students = (result.Result as Microsoft.AspNetCore.Mvc.OkObjectResult)?.Value as System.Collections.Generic.List<GuidanceDepartmentMain.Contracts.StudentSummaryDto>;
+
+        Assert.NotNull(students);
+        Assert.NotEmpty(students);
+        Assert.Contains(students, x => x.FullName.Contains("Alicia") || x.FullName.Contains("Maya"));
+    }
+
+    [Fact]
     public async Task Notification_retries_and_fails_gracefully()
     {
         var transport = new Mock<IOutboundMessageTransport>(); transport.Setup(x => x.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>())).ThrowsAsync(new InvalidOperationException());
         var audit = new Mock<IAuditLogService>(); var service = new NotificationService(transport.Object, audit.Object, NullLogger<NotificationService>.Instance);
         Assert.False(await service.SendAsync(new("student@example.edu", "Subject", "Body"), CancellationToken.None));
         transport.Verify(x => x.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.AtLeast(2)); audit.Verify(x => x.AppendAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private sealed class TestDbContextFactory : IDbContextFactory<GuidanceDbContext>
+    {
+        public GuidanceDbContext CreateDbContext()
+        {
+            var options = new DbContextOptionsBuilder<GuidanceDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+            var context = new GuidanceDbContext(options);
+            context.Students.AddRange(
+                new Student { Id = Guid.NewGuid(), StudentNumber = "1042", FullName = "Alicia Smith", Email = "alicia.smith@example.edu" },
+                new Student { Id = Guid.NewGuid(), StudentNumber = "1077", FullName = "Maya Chen", Email = "maya.chen@example.edu" });
+            context.SaveChanges();
+            return context;
+        }
+
+        public ValueTask<GuidanceDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+            => new(CreateDbContext());
     }
 }

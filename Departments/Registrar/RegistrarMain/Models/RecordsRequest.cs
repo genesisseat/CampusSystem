@@ -7,7 +7,7 @@ namespace RegistrarMain.Models;
 public class RecordsRequest
 {
     public int Id { get; set; }
-    public string StudentId { get; set; } = "";
+    public Guid StudentId { get; set; }
     public Student? Student { get; set; }
     public string DocumentType { get; set; } = "";
     public string Status { get; set; } = "Pending";
