@@ -10,11 +10,11 @@ The service layer returns DTOs and `ServiceResult<T>` values; controllers should
 - `PiiMaskingService`: configurable email, phone, and SSN-like redaction for exports and summaries.
 - `NotificationService`: outbound transport wrapped in Polly retry and circuit-breaker policies; failures are audited and returned as `false`.
 
-`InMemoryGuidanceRequestStore` and `InMemoryRefreshTokenStore` are development scaffolding. Replace them with EF Core/Identity-backed implementations before production.
+`InMemoryGuidanceRequestStore` and `InMemoryRefreshTokenStore` are development scaffolding. The project is currently configured to the shared campus SQL host through `CampusSystem.Sql.CampusSystemDbConnector` and the `CampusSystemDb` connection string, but the in-memory stores remain placeholders until the department persistence layer is explicitly approved and implemented.
 
 ## Configuration and CI
 
-Keep signing keys and connection strings out of JSON. Use `dotnet user-secrets` during development and an Azure Key Vault configuration provider in production. Add this dependency check to CI:
+Keep signing keys and connection strings out of JSON. Use `dotnet user-secrets` during development and an Azure Key Vault configuration provider in production. The Guidance app expects the shared `CampusSystemDb` connection string in `appsettings.json` and resolves it through `CampusSystemDbConnector.Resolve(...)` in `Program.cs`. Add this dependency check to CI:
 
 ```text
 dotnet list package --vulnerable

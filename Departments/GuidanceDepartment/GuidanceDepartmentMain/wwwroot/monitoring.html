@@ -10,7 +10,7 @@
   <header class="topbar">
     <a class="brand" href="/"><span class="brand-mark">GD</span><span>Guidance Department</span></a>
     <nav class="menu" aria-label="Primary navigation">
-      <a href="/">Overview</a><a href="/dashboard.html">Dashboard</a><a class="active" href="/monitoring.html">Students</a><a href="/triage.html">Triage</a><a href="/appointments.html">Appointments</a><a href="/case-notes.html">Case notes</a>
+      <a href="/">Overview</a><a href="/students.html">Students</a><a class="active" href="/monitoring.html">Students</a><a href="/triage.html">Triage</a><a href="/appointments.html">Appointments</a><a href="/case-notes.html">Case notes</a>
     </nav>
     <span class="role-chip">Counselor / Guidance</span>
   </header>
@@ -25,11 +25,12 @@
       <span class="muted">4 students in Guidance scope / local preview data</span>
     </section>
     <section class="monitoring-panel" aria-labelledby="monitoring-title">
-      <div class="panel-heading"><div><p class="eyebrow">Follow-up register</p><h2 id="monitoring-title">Students needing attention</h2></div><span class="section-count" data-monitoring-count>4 visible</span></div>
-      <div class="monitoring-list" data-monitoring-table></div>
+      <div class="panel-heading"><div><p class="eyebrow">Follow-up register</p><h2 id="monitoring-title">Students needing attention</h2></div><span class="section-count" data-monitoring-count>0 visible</span></div>
+      <div class="monitoring-list" data-guidance-students></div>
     </section>
   </main>
-  <footer>Guidance Department <span>Prototype / local data only</span></footer>
+  <footer>Guidance Department <span>Live campus student data</span></footer>
   <script src="/prototype.js"></script>
+  <script src="/student-feed.js"></script>
 </body>
 </html>

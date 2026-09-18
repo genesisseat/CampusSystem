@@ -35,6 +35,8 @@ The project currently targets `.NET 10`:
 <TargetFramework>net10.0</TargetFramework>
 ```
 
+The Guidance department is connected to the shared campus SQL host through the `CampusSystemDb` connection string and the connector class in `CampusSystem/SQL/CampusSystemDbConnector.cs`. The current local database host is the Docker SQL Server at `localhost,1433` using the `sa` account and the `CampusSystemDb` database.
+
 ## Restore dependencies
 
 From `X:\CampusSystem\Departments\GuidanceDepartment`:
@@ -61,6 +63,7 @@ NuGet packages are restored from the configured NuGet sources. The main project 
 | `FluentValidation.AspNetCore` | `11.3.1` | DTO validation integration |
 | `Polly` | `8.6.4` | Notification retry and circuit breaker |
 | `Microsoft.EntityFrameworkCore` | `10.0.11` | Persistence abstraction and concurrency types |
+| `Microsoft.EntityFrameworkCore.SqlServer` | `10.0.11` | Shared campus database provider for `CampusSystemDb` |
 
 The test project additionally uses:
 
@@ -186,7 +189,7 @@ The following are scaffolding implementations and are not production persistence
 - `AuditLogService`
 - `UnavailableOutboundMessageTransport`
 
-Before production deployment, replace them with durable, secured implementations. Add a real database provider and migrations when persistence is introduced.
+The project is currently wired to the shared campus database via `CampusSystemDbConnector` and the `ConnectionStrings:CampusSystemDb` setting. Before production deployment, replace this in-memory scaffolding with durable, secured department-specific persistence if the Guidance workflows require it. Do not create a separate Guidance-only database; keep the department data in the shared `CampusSystemDb` model unless a formal architecture change approves otherwise.
 
 ## Security checks
 

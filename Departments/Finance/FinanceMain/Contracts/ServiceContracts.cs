@@ -8,7 +8,7 @@ public record ServiceResult<T>(bool Succeeded, T? Value, string? ErrorCode = nul
     public static ServiceResult<T> Fail(string code, string message) => new(false, default, code, message);
 }
 
-public enum RequestStatus { Requested, InProgress, Resolved }
+public enum RequestStatus { Requested, InProgress, Resolved, ReferredOut, ReferredIn }
 public enum RequestUrgency { Normal, Urgent }
 
 public record StudentRequestDto(string Subject, string Details, string? SafetyValveText, RequestUrgency Urgency);

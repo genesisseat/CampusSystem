@@ -2,9 +2,12 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using CampusSystem.Data.Models;
 using FluentValidation;
 using GuidanceDepartmentMain.Contracts;
+using GuidanceDepartmentMain.Data;
 using GuidanceDepartmentMain.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
@@ -44,10 +47,58 @@ public sealed class ServiceTests
     }
 
     [Fact]
+    public async Task Triage_allows_referred_referral_flow()
+    {
+        var store = new Mock<IGuidanceRequestStore>(); var audit = new Mock<IAuditLogService>(); var request = new GuidanceRequestRecord { Id = Guid.NewGuid(), Status = RequestStatus.Requested };
+        store.Setup(x => x.FindAsync(request.Id, It.IsAny<CancellationToken>())).ReturnsAsync(request);
+        store.Setup(x => x.SaveAsync(It.IsAny<GuidanceRequestRecord>(), It.IsAny<byte[]>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var service = new CounselorTriageService(store.Object, audit.Object);
+        var referredOut = await service.TransitionAsync("counselor", new(request.Id, RequestStatus.ReferredOut, [1]), CancellationToken.None);
+        var referredIn = await service.TransitionAsync("counselor", new(request.Id, RequestStatus.ReferredIn, [1]), CancellationToken.None);
+        var inProgress = await service.TransitionAsync("counselor", new(request.Id, RequestStatus.InProgress, [1]), CancellationToken.None);
+
+        Assert.True(referredOut.Succeeded);
+        Assert.True(referredIn.Succeeded);
+        Assert.True(inProgress.Succeeded);
+    }
+
+    [Fact]
+    public async Task Incoming_referral_is_processed_by_triage_service()
+    {
+        var studentId = Guid.NewGuid();
+        var store = new Mock<IGuidanceRequestStore>();
+        var audit = new Mock<IAuditLogService>();
+        store.Setup(x => x.AddAsync(It.IsAny<GuidanceRequestRecord>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var result = await new CounselorTriageService(store.Object, audit.Object)
+            .ProcessIncomingReferralAsync(new IncomingReferralDto(studentId, "Academic support", "REG"), CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RequestStatus.ReferredIn, result.Value!.Status);
+        store.Verify(x => x.AddAsync(It.Is<GuidanceRequestRecord>(r => r.StudentId == studentId && r.Status == RequestStatus.ReferredIn), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Csv_validation_reports_schema_failure_without_commit()
     {
         await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes("Wrong,Header\n1,Name\n")); var result = await new CsvImportService().ValidateAsync(stream, CancellationToken.None);
         Assert.False(result.Passed); Assert.NotEmpty(result.Errors);
+    }
+
+    [Fact]
+    public async Task Guidance_student_feed_returns_live_student_rows()
+    {
+        var controller = new GuidanceDepartmentMain.Controllers.GuidanceStudentController(
+            new TestDbContextFactory(),
+            new CounselorTriageService(new InMemoryGuidanceRequestStore(), new AuditLogService()));
+
+        var result = await controller.GetStudents(CancellationToken.None);
+        var students = (result.Result as Microsoft.AspNetCore.Mvc.OkObjectResult)?.Value as System.Collections.Generic.List<GuidanceDepartmentMain.Contracts.StudentSummaryDto>;
+
+        Assert.NotNull(students);
+        Assert.NotEmpty(students);
+        Assert.Contains(students, x => x.FullName.Contains("Alicia") || x.FullName.Contains("Maya"));
     }
 
     [Fact]
@@ -57,5 +108,25 @@ public sealed class ServiceTests
         var audit = new Mock<IAuditLogService>(); var service = new NotificationService(transport.Object, audit.Object, NullLogger<NotificationService>.Instance);
         Assert.False(await service.SendAsync(new("student@example.edu", "Subject", "Body"), CancellationToken.None));
         transport.Verify(x => x.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.AtLeast(2)); audit.Verify(x => x.AppendAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private sealed class TestDbContextFactory : IDbContextFactory<GuidanceDbContext>
+    {
+        public GuidanceDbContext CreateDbContext()
+        {
+            var options = new DbContextOptionsBuilder<GuidanceDbContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
+
+            var context = new GuidanceDbContext(options);
+            context.Students.AddRange(
+                new Student { Id = Guid.NewGuid(), StudentNumber = "1042", FullName = "Alicia Smith", Email = "alicia.smith@example.edu" },
+                new Student { Id = Guid.NewGuid(), StudentNumber = "1077", FullName = "Maya Chen", Email = "maya.chen@example.edu" });
+            context.SaveChanges();
+            return context;
+        }
+
+        public ValueTask<GuidanceDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+            => new(CreateDbContext());
     }
 }

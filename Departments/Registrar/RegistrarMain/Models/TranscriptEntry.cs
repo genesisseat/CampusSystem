@@ -7,7 +7,7 @@ namespace RegistrarMain.Models;
 public class TranscriptEntry
 {
     public int Id { get; set; }
-    public string StudentId { get; set; } = "";
+    public Guid StudentId { get; set; }
     public Student? Student { get; set; }
     public string Semester { get; set; } = "";
     public int CourseId { get; set; }

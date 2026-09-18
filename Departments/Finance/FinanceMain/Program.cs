@@ -1,8 +1,16 @@
-﻿using FluentValidation;
+﻿using CampusSystem.Sql;
+using FluentValidation;
 using FinanceMain.Contracts;
 using FinanceMain.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var campusConnection = CampusSystemDbConnector.Resolve(
+    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
+
+builder.Services.AddDbContextFactory<DbContext>(options =>
+    options.UseSqlServer(campusConnection));
 
 // Add services to the container.
 // Guidance services
@@ -41,5 +49,6 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
+
 
 

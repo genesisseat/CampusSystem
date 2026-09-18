@@ -27,4 +27,8 @@
     <ProjectReference Include="..\..\..\Shared\CampusSystem.Data\CampusSystem.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\..\..\SQL\CampusSystemDbConnector.cs" Link="SQL\CampusSystemDbConnector.cs" />
+  </ItemGroup>
+
 </Project>
