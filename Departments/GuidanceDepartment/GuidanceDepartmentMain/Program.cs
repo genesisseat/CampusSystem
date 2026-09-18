@@ -27,8 +27,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.Events = new JwtBearerEvents { OnMessageReceived = context => { context.Token = context.Request.Cookies["access_token"]; return Task.CompletedTask; } };
 });
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
-builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
-builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+builder.Services.AddScoped<IGuidanceRequestStore, SqlGuidanceRequestStore>();
+builder.Services.AddScoped<IRefreshTokenStore, SqlRefreshTokenStore>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentRequestService, StudentRequestService>();

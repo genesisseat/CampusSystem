@@ -19,6 +19,37 @@ public sealed class CounselorTriageService(IGuidanceRequestStore store, IAuditLo
         return ServiceResult<StudentRequestResponse>.Ok(ToResponse(request));
     }
 
-    private static bool IsValid(RequestStatus current, RequestStatus next) => (current, next) is (RequestStatus.Requested, RequestStatus.InProgress) or (RequestStatus.InProgress, RequestStatus.Resolved);
+    public async Task<ServiceResult<StudentRequestResponse>> ProcessIncomingReferralAsync(IncomingReferralDto referral, CancellationToken cancellationToken)
+    {
+        if (referral.StudentId == Guid.Empty) return ServiceResult<StudentRequestResponse>.Fail("validation", "StudentId is required.");
+        if (string.IsNullOrWhiteSpace(referral.ReferralReason)) return ServiceResult<StudentRequestResponse>.Fail("validation", "ReferralReason is required.");
+        if (string.IsNullOrWhiteSpace(referral.OriginatingDeptCode)) return ServiceResult<StudentRequestResponse>.Fail("validation", "OriginatingDeptCode is required.");
+
+        var record = new GuidanceRequestRecord
+        {
+            Id = Guid.NewGuid(),
+            StudentId = referral.StudentId,
+            Subject = $"Incoming referral from {referral.OriginatingDeptCode}",
+            Details = referral.ReferralReason.Trim(),
+            SafetyValveText = null,
+            Urgency = RequestUrgency.Normal,
+            Status = RequestStatus.ReferredIn,
+            IdempotencyKey = $"incoming-referral:{referral.StudentId}:{referral.OriginatingDeptCode}:{DateTimeOffset.UtcNow:O}"
+        };
+
+        await store.AddAsync(record, cancellationToken);
+        return ServiceResult<StudentRequestResponse>.Ok(ToResponse(record));
+    }
+
+    private static bool IsValid(RequestStatus current, RequestStatus next) =>
+        (current, next) is
+        (RequestStatus.Requested, RequestStatus.InProgress)
+        or (RequestStatus.Requested, RequestStatus.ReferredOut)
+        or (RequestStatus.InProgress, RequestStatus.Resolved)
+        or (RequestStatus.InProgress, RequestStatus.ReferredOut)
+        or (RequestStatus.ReferredOut, RequestStatus.ReferredIn)
+        or (RequestStatus.ReferredOut, RequestStatus.Resolved)
+        or (RequestStatus.ReferredIn, RequestStatus.InProgress)
+        or (RequestStatus.ReferredIn, RequestStatus.Resolved);
     private static StudentRequestResponse ToResponse(GuidanceRequestRecord x) => new(x.Id, x.Subject, x.Details, x.SafetyValveText, x.Urgency, x.Status, x.RowVersion);
 }

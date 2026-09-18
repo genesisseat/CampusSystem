@@ -29,8 +29,8 @@ $serviceFiles = @(
 $contractFiles = @('ServiceContracts.cs')
 $connectorFiles = @('CampusSystemDbConnector.cs')
 $registrationMarkers = @(
-    'IGuidanceRequestStore, InMemoryGuidanceRequestStore'
-    'IRefreshTokenStore, InMemoryRefreshTokenStore'
+    'IGuidanceRequestStore, SqlGuidanceRequestStore'
+    'IRefreshTokenStore, SqlRefreshTokenStore'
     'IAuditLogService, AuditLogService'
     'IAuthService, AuthService'
     'IStudentRequestService, StudentRequestService'
