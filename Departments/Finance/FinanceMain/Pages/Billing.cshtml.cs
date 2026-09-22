@@ -7,12 +7,21 @@
 <div class="page-heading mb-4">
     <div>
         <span class="eyebrow text-uppercase text-muted fw-semibold">Financial Services</span>
-        <h1 class="h2">Billing & Statements</h1>
+        <h1 class="h2">Billing & invoices</h1>
         <p class="text-muted">Manage tuition fees, view account statements, and process payments.</p>
     </div>
+    <button class="btn btn-dark">Export list</button>
 </div>
 
-<!-- Account Summary Cards -->
+<div class="toolbar d-flex flex-wrap gap-2 mb-4">
+    <input class="form-control" style="max-width: 260px;" placeholder="Search invoices" />
+    <select class="form-select w-auto">
+        <option>All statuses</option>
+        <option>Open</option>
+        <option>Paid</option>
+    </select>
+</div>
+
 <div class="row g-3 mb-4">
     <div class="col-md-4">
         <div class="surface p-4 border rounded shadow-sm bg-white">
@@ -37,7 +46,6 @@
     </div>
 </div>
 
-<!-- Statement \\\\\\\& Invoices -->
 <div class="surface p-4 border rounded shadow-sm bg-white mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h5 mb-0">Active Statement Breakdown</h2>
@@ -83,7 +91,6 @@
     </div>
 </div>
 
-<!-- Transaction History -->
 <div class="surface p-4 border rounded shadow-sm bg-white">
     <h2 class="h5 mb-3">Recent Transactions</h2>
     <div class="table-responsive">

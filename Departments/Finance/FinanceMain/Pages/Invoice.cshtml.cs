@@ -6,7 +6,7 @@
 
 <div class="page-heading d-flex justify-content-between align-items-start mb-4">
     <div>
-        <span class="eyebrow text-uppercase text-muted fw-semibold">Invoice Detail</span>
+        <span class="eyebrow text-uppercase text-muted fw-semibold">Invoice detail</span>
         <h1 class="h2">Invoice @Model.Invoice.InvoiceNumber</h1>
         <p class="text-muted">@Model.Invoice.Term · Issued @Model.Invoice.IssueDate.ToString("MMM dd, yyyy")</p>
     </div>

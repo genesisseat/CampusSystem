@@ -1,0 +1,313 @@
+/* styles.css — High Contrast Dark Card on Soft Slate BG */
+:root {
+  --bg-top: #1e2f47;
+  --bg-bottom: #111d2e;
+  --card-bg: #0f1a2b;
+  --card-inner: #16253a;
+  --card-border: rgba(255, 255, 255, 0.12);
+  --accent: #2fb0ff;
+  --accent-hover: #6fd3ff;
+  --muted: #a3b8cc;
+  --text: #ffffff;
+  --text-inverse: #0f1724;
+  --btn-text: #ffffff;
+  --input-bg: #091320;
+  --input-border: rgba(255, 255, 255, 0.16);
+  --radius: 14px;
+  --card-width: 980px;
+  --font-base: 16px;
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  font-size: var(--font-base);
+}
+
+/* Layout */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  background: linear-gradient(180deg, var(--card-bg), var(--card-inner));
+  border: 1px solid var(--card-border);
+  width: var(--card-width);
+  padding: 36px;
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.5);
+  display: flex;
+  gap: 28px;
+  align-items: stretch;
+  color: var(--text);
+}
+
+/* Left Column — Form Section */
+.col-left {
+  flex: 1.1;
+  min-width: 340px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #042033;
+  font-size: 20px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 4px 0 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 12px 0;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tab.active {
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(47, 176, 255, 0.25);
+}
+
+/* Inputs & Labels */
+label {
+  display: block;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 12px 14px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input::placeholder {
+  color: rgba(234, 246, 255, 0.35);
+}
+
+input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(47, 176, 255, 0.18);
+}
+
+/* Password Eye Toggle */
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-right: 42px;
+}
+
+.password-wrap .eye {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--muted);
+  padding: 4px;
+}
+
+.password-wrap .eye:hover {
+  color: var(--accent-hover);
+}
+
+/* Primary Button */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  margin-top: 22px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 0 10px 25px rgba(47, 176, 255, 0.2);
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover {
+  opacity: 0.92;
+}
+
+.btn:active {
+  transform: scale(0.99);
+}
+
+/* Links & Small Texts */
+.small {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.link {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Messages */
+.errors {
+  background: rgba(255, 107, 107, 0.12);
+  color: #ff8080;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  font-size: 14px;
+}
+
+.success {
+  background: rgba(46, 204, 113, 0.12);
+  color: #6ee7b7;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+  border: 1px solid rgba(46, 204, 113, 0.2);
+  font-size: 14px;
+}
+
+/* Right Column — Light Panel for Logo/Info */
+.col-right {
+  flex: 0.9;
+  min-width: 280px;
+  background: linear-gradient(180deg, #ffffff, #f0f7ff);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  color: var(--text-inverse);
+}
+
+.school-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.school-logo img {
+  max-width: 420px;
+  width: 95%;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  :root {
+    --card-width: 100%;
+  }
+
+  .card {
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .col-right {
+    order: 2;
+    min-width: unset;
+  }
+
+  .col-left {
+    order: 1;
+    min-width: unset;
+  }
+}
