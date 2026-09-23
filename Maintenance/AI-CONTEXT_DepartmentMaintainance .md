@@ -227,4 +227,4 @@ This pattern is the standard wiring for Guidance and any future department that 
 
 ## Current Validation Expectations
 
-A complete workspace validation should report six department projects. A healthy result requires all expected service files, contracts, namespaces, DI registrations, package references, and builds to pass. Build failures should be reported with the department name and compiler diagnostic, not hidden behind a generic health status.
+A complete workspace validation should report six department projects. A healthy result requires all expected service files, contracts, namespaces, DI registrations, package references, and builds to pass. Build failures should be reported with the department name and compiler diagnostic, not hidden behind a generic health status.x kjhgbvfcdxsza

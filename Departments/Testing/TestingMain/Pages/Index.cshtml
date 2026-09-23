@@ -1,0 +1,136 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Debian DB Test Form";
+}
+
+<div class="container mt-4" style="max-width: 1100px;">
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2>Register User to Debian Database</h2>
+            <p class="text-muted">Target Host: <code>100.98.41.69:3306</code></p>
+
+            @if (!string.IsNullOrEmpty(Model.Message))
+            {
+                <div class="alert @(Model.IsSuccess ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                    @Model.Message
+                </div>
+            }
+
+            <form method="post">
+                <div class="mb-3">
+                    <label for="Name" class="form-label">Full Name</label>
+                    <input type="text" asp-for="Name" class="form-control" placeholder="e.g. Juan Dela Cruz" required />
+                </div>
+
+                <div class="mb-3">
+                    <label for="Email" class="form-label">Email Address</label>
+                    <input type="email" asp-for="Email" class="form-control" placeholder="e.g. juan@example.com" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">Submit to Debian Host</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h3>View Table Content</h3>
+
+            <form method="post" asp-page-handler="LoadTable">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label asp-for="SelectedDatabase" class="form-label">Database</label>
+                        <select asp-for="SelectedDatabase" class="form-select" onchange="this.form.submit()">
+                            @if (Model.Databases.Count == 0)
+                            {
+                                <option value="">No databases available</option>
+                            }
+                            else
+                            {
+                                @foreach (var db in Model.Databases)
+                                {
+                                    <option value="@db" selected="@(db == Model.SelectedDatabase)">@db</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label asp-for="SelectedTable" class="form-label">Table</label>
+                        <select asp-for="SelectedTable" class="form-select">
+                            @if (Model.Tables.Count == 0)
+                            {
+                                <option value="">No tables available</option>
+                            }
+                            else
+                            {
+                                @foreach (var table in Model.Tables)
+                                {
+                                    <option value="@table" selected="@(table == Model.SelectedTable)">@table</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-secondary w-100">Refresh</button>
+                    </div>
+                </div>
+            </form>
+
+            @if (Model.Rows.Count > 0)
+            {
+                <div class="table-responsive mt-3">
+                    <table class="table table-striped table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                @foreach (var column in Model.Rows[0].Keys)
+                                {
+                                    <th>@column</th>
+                                }
+                                <th style="width: 220px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                <tr>
+                                    @foreach (var key in row.Keys)
+                                    {
+                                        <td>@row[key]</td>
+                                    }
+                                    <td>
+                                        <form method="post" asp-page-handler="UpdateRow" class="d-inline">
+                                            <input type="hidden" name="rowId" value="@row.FirstOrDefault(x => x.Key.Equals("id", StringComparison.OrdinalIgnoreCase)).Value" />
+                                            <input type="hidden" name="databaseName" value="@Model.SelectedDatabase" />
+                                            <input type="hidden" name="tableName" value="@Model.SelectedTable" />
+
+                                            @foreach (var key in row.Keys)
+                                            {
+                                                <input type="hidden" name="@key" value="@row[key]" />
+                                            }
+
+                                            <button type="submit" class="btn btn-sm btn-warning me-2" onclick="return confirm('Update this row?');">Edit</button>
+                                        </form>
+
+                                        <form method="post" asp-page-handler="DeleteRow" class="d-inline">
+                                            <input type="hidden" name="rowId" value="@row.FirstOrDefault(x => x.Key.Equals("id", StringComparison.OrdinalIgnoreCase)).Value" />
+                                            <input type="hidden" name="databaseName" value="@Model.SelectedDatabase" />
+                                            <input type="hidden" name="tableName" value="@Model.SelectedTable" />
+                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this row?');">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mt-3">No rows found for the selected table.</p>
+            }
+        </div>
+    </div>
+</div>

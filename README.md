@@ -14,6 +14,7 @@ The applications share one physical SQL Server LocalDB database during developme
 | Library | `Departments/Library/LibraryMain` | Catalog, circulation, history, fines, and reservations |
 | Registrar | `Departments/Registrar/RegistrarMain` | Courses, registration, academic records, verification, and records requests |
 | Student Portal | `Departments/StudentPortal/StudentPortalMain` | Student-facing schedules, grades, enrollment, finances, announcements, and requests |
+| Testing | `Departments/Testing/TestingMain` | QA workflows, regression tracking, test-case management, and bug triage |
 
 All department applications target `net10.0` and use nullable reference types and implicit usings.
 
@@ -82,6 +83,26 @@ Build an individual project from its project directory:
 ```powershell
 cd Departments\Registrar\RegistrarMain
 dotnet build RegistrarMain.csproj
+```
+
+Build and run the Testing department site:
+
+```powershell
+cd .\Departments\Testing\TestingMain
+dotnet build TestingMain.csproj
+dotnet run --project TestingMain.csproj
+```
+
+Then open the local app in a browser:
+
+```text
+https://localhost:5001/
+```
+
+If the dev certificate is not yet trusted, run:
+
+```powershell
+dotnet dev-certs https --trust
 ```
 
 Build all department applications:

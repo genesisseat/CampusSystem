@@ -18,6 +18,7 @@ flowchart TD
     C --> G[Library]
     C --> H[Registrar]
     C --> I[StudentPortal]
+    C --> T[Testing]
     A --> J[Requirements]
     A --> K[SQL]
     A --> L[Environment]
@@ -45,6 +46,7 @@ flowchart TD
   - [Departments/Library](Departments/Library)
   - [Departments/Registrar](Departments/Registrar)
   - [Departments/StudentPortal](Departments/StudentPortal)
+  - [Departments/Testing](Departments/Testing)
 
 - [Shared/CampusSystem.Data](Shared/CampusSystem.Data) — shared `Student` identity model only; department schemas and migrations remain in their owning projects
 
@@ -79,6 +81,10 @@ flowchart TD
 ### Student Portal
 - [Departments/StudentPortal/StudentPortalMain](Departments/StudentPortal/StudentPortalMain)
 - AI context: [Departments/StudentPortal/StudentPortalMain/Ai-context_(StudentPortal).md](Departments/StudentPortal/StudentPortalMain/Ai-context_(StudentPortal).md)
+
+### Testing
+- [Departments/Testing/TestingMain](Departments/Testing/TestingMain)
+- AI context: [Departments/Testing/TestingMain/Ai-context_(Testing).md](Departments/Testing/TestingMain/Ai-context_(Testing).md)
 
 ## Role of the Maintenance Dashboard
 
