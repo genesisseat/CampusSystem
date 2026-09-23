@@ -1,3 +1,114 @@
 @page
-@{ ViewData["Title"] = "Financial Aid"; }
-<div class="page-heading"><div><span class="eyebrow">Student support</span><h1>Financial aid status</h1><p class="text-muted">Review scholarship and aid awards.</p></div></div><div class="surface p-4"><div class="d-flex justify-content-between align-items-start"><div><h2 class="h5">2026-27 aid year</h2><p class="text-muted mb-0">No award information has been loaded.</p></div><span class="badge text-bg-light">Pending review</span></div><hr /><div class="row"><div class="col-sm-4"><small class="text-muted">Awarded</small><div class="h4">$0.00</div></div><div class="col-sm-4"><small class="text-muted">Disbursed</small><div class="h4">$0.00</div></div><div class="col-sm-4"><small class="text-muted">Remaining</small><div class="h4">$0.00</div></div></div></div>
+@{
+    ViewData["Title"] = "Financial Aid";
+    string academicYear = "2026-27";
+    string applicationStatus = "Pending review";
+    decimal awardedAmount = 0.00m;
+    decimal disbursedAmount = 0.00m;
+    decimal remainingAmount = awardedAmount - disbursedAmount;
+    string lastUpdated = "September 22, 2026";
+}
+
+<div class="page-heading">
+    <div>
+        <span class="eyebrow">Student support</span>
+        <h1>Financial Aid Status</h1>
+        <p class="text-muted">Review your scholarship, grants, and financial aid awards.</p>
+    </div>
+</div>
+
+<div class="surface p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h2 class="h5">@academicYear Academic Year</h2>
+            <p class="text-muted mb-0">
+                @if (awardedAmount == 0)
+                {
+                    <span>No award information has been loaded.</span>
+                }
+                else
+                {
+                    <span>Your financial aid awards are listed below.</span>
+                }
+            </p>
+        </div>
+        <span class="badge @(applicationStatus == "Pending review" ? "bg-warning text-dark" : "bg-success")">
+            @applicationStatus
+        </span>
+    </div>
+    <hr />
+    <div class="row text-center">
+        <div class="col-sm-4">
+            <small class="text-muted d-block">Total Awarded</small>
+            <div class="h4 fw-bold">$@awardedAmount.ToString("F2")</div>
+        </div>
+        <div class="col-sm-4">
+            <small class="text-muted d-block">Disbursed</small>
+            <div class="h4 text-success">$@disbursedAmount.ToString("F2")</div>
+        </div>
+        <div class="col-sm-4">
+            <small class="text-muted d-block">Remaining Balance</small>
+            <div class="h4 text-primary">$@remainingAmount.ToString("F2")</div>
+        </div>
+    </div>
+</div>
+
+<div class="surface p-4 mb-4">
+    <h3 class="h5 mb-3">Application Details</h3>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Application Submitted:</strong></p>
+            <p class="text-muted">September 10, 2026 — 10:30 AM</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Last Updated:</strong></p>
+            <p class="text-muted">@lastUpdated</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Type of Aid:</strong></p>
+            <p class="text-muted">Scholarship & Tuition Grant</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Documents Submitted:</strong></p>
+            <p class="text-muted">
+                <span class="badge bg-success me-1">Requirements Complete</span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="surface p-4 mb-4">
+    <h3 class="h5 mb-3">Recent Updates</h3>
+    <ul class="list-unstyled mb-0">
+        <li class="py-2 border-bottom">
+            <span class="text-muted small">Sep 15, 2026</span>
+            <p class="mb-0">Application received and verified — under review by Financial Aid Office</p>
+        </li>
+        <li class="py-2 border-bottom">
+            <span class="text-muted small">Sep 10, 2026</span>
+            <p class="mb-0">All supporting documents successfully uploaded</p>
+        </li>
+        <li class="py-2">
+            <span class="text-muted small">Sep 08, 2026</span>
+            <p class="mb-0">Financial aid application submitted</p>
+        </li>
+    </ul>
+</div>
+
+<div class="surface p-4">
+    <h3 class="h5 mb-3">What to Do Next</h3>
+    <p class="text-muted mb-3">
+        Review typically takes <strong>5–7 business days</strong>. You will receive an email once your status changes.
+    </p>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-primary" href="/FinancialAid/UploadDocuments">
+            Upload Additional Documents
+        </a>
+        <a class="btn btn-outline-secondary" href="/FinancialAid/ApplicationForm">
+            View Application
+        </a>
+        <a class="btn btn-outline-info" href="/FinancialAid/FAQs">
+            Help & FAQs
+        </a>
+    </div>
+</div>
