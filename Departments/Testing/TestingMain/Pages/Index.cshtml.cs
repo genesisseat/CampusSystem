@@ -194,12 +194,17 @@ public class IndexModel : PageModel
             var fieldUpdates = new List<string>();
             var parameters = new List<MySqlParameter>();
 
-            foreach (var key in Request.Form.Keys.Where(k => k != "rowId" && k != "databaseName" && k != "tableName" && !string.IsNullOrWhiteSpace(k)))
+            foreach (var key in Request.Form.Keys.Where(k => !IsIgnoredUpdateField(k)))
             {
                 var columnName = key;
                 var value = Request.Form[key].ToString();
 
                 if (columnName.Equals(idColumn, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (IsDateTimeLikeColumn(columnName))
                 {
                     continue;
                 }
@@ -352,5 +357,41 @@ public class IndexModel : PageModel
 
         var result = await command.ExecuteScalarAsync();
         return result?.ToString() ?? string.Empty;
+    }
+
+    public static bool IsIgnoredUpdateField(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return true;
+        }
+
+        var normalized = key.Trim();
+
+        return normalized.Equals("rowId", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("databaseName", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("tableName", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("__RequestVerificationToken", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("RequestVerificationToken", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("created_at", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("updated_at", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("createdAt", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("updatedAt", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("created", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("updated", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("timestamp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDateTimeLikeColumn(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return false;
+        }
+
+        var normalized = key.Trim();
+        return normalized.EndsWith("_at", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("date", StringComparison.OrdinalIgnoreCase)
+            || normalized.Contains("time", StringComparison.OrdinalIgnoreCase);
     }
 }
