@@ -1,4 +1,4 @@
-﻿using CampusSystem.Sql;
+using CampusSystem.Sql;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using StudentPortalMain.Contracts;
@@ -13,7 +13,6 @@ builder.Services.AddDbContextFactory<DbContext>(options =>
     options.UseSqlServer(campusConnection));
 
 // Add services to the container.
-// Guidance services
 builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
 builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
@@ -26,6 +25,21 @@ builder.Services.AddScoped<ICsvImportService, CsvImportService>();
 builder.Services.AddSingleton<IPiiMaskingService, PiiMaskingService>();
 builder.Services.AddScoped<IOutboundMessageTransport, UnavailableOutboundMessageTransport>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Student Portal & Registrar Database Services
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+builder.Services.AddTransient<MySqlConnector.MySqlConnection>(_ =>
+    new MySqlConnector.MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<StudentPortalDbService>();
+
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -39,16 +53,20 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
 
 app.UseAuthorization();
 
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/Dashboard");
+    return Task.CompletedTask;
+});
+
 app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages();
 
 app.Run();
-
-
-

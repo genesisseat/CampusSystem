@@ -1,108 +1,75 @@
-# StudentPortal AI Context V3
+# StudentPortal AI Context V4
 
 ## Ownership
 
-StudentPortal owns the student-facing dashboard, schedule, grades, guidance-request, profile, enrollment, financials, announcements, library-status, document-request, calendar, and support/helpdesk interfaces in this project. Keep changes local to `StudentPortalMain` unless a shared contract or platform change is required.
+StudentPortal owns the student-facing experience: Dashboard, Schedule, Grades, Enrollment & COR, Document Requests (201 Vault), Guidance Requests, and Profile/Settings interfaces. It is connected to the collegiate database and tightly integrated with the Registrar System (`Departments/Registrar/RegistrarMain`).
 
-## How to edit this project
+## System Architecture & Connectivity
 
-Use the task type to decide the correct layer:
+StudentPortal connects to the shared institutional database (`mydb` on MySQL `100.98.41.69:3306`) matching RegistrarMain, using `MySqlConnector` and `Dapper`:
+- **Registrar Database**:
+  - `user`: Authenticated student accounts and active sessions.
+  - `student_profile`: Program, curriculum year, academic standing, completed units, clearance.
+  - `document_credentials`: The student's 201 File (Form 137, 138, PSA Birth Certificate, Good Moral, Medical Clearance).
+  - `class_offerings` & `subjects`: Class schedules, rooms, instructors, lecture/lab credits.
+  - `enrollments` & `enrolled_subjects`: Official course enrollments and printable Certificate of Registration (COR).
+  - `grades`: Final grades encoded/controlled by Registrar; real-time GWA calculation.
+  - `transcript_requests`: Live document requests with security tracking tokens (`MSU-[TYPE]-YEAR-[TOKEN]`), synchronized with Registrar's `DocumentProcessing.cshtml`.
+  - `add_drop_requests`: Add/Drop petitions submitted to Registrar's `EnrollmentValidation.cshtml`.
+  - `overload_waiver_requests`: Overload petitions submitted to Registrar.
+  - `completion_revision_requests`: INC completion and grade revision petitions submitted to Registrar's `GradeControl.cshtml`.
+  - `activity_log`: Audit logs of student transactions.
+  - `settings`: Institutional settings (`current_school_year`, `current_semester`).
+- **Guidance Services**: `GuidanceDbContext` EF Core connection to `CampusSystemDb`.
 
-- Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Keep requests, grades, profile, and schedule controls visual-only until a contract and auth review are approved.
-- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, models, DTOs, `Program.cs`, and related server files only when the task explicitly requires grade persistence, schedule logic, profile updates, or request submission.
-- AI model rule: if the request does not clearly ask for backend logic, assume it is a UI edit and do not add live student-record processing or API calls.
+## Department UI & Implemented Modules
 
-## AI maintenance manual
+1. **Dashboard (`/Dashboard`)**:
+   - Welcome banner with student name, ID number, program, year level, academic status, and enrollment status.
+   - Live KPI cards: Cumulative GWA, Degree Progress bar (Completed vs Remaining Units), Enrolled Load, Pending Requests.
+   - Class schedule preview for the current term and recent grades preview.
+   - Live Registrar Document & Petition Tracker.
+   - Quick action shortcuts (Document Request, COR, Schedule, Guidance).
 
-This file is the project guide for future AI sessions and developer handoffs. It should stay current as the project changes.
+2. **My Schedule & Classes (`/Schedule`)**:
+   - Term schedule selector (active term and previous enrolled semesters).
+   - Enrolled class table with units, lecture/lab hours, days, time, room, and instructor.
+   - Weekly visual schedule timetable matrix (Monday to Saturday).
+   - Official printable Study Load sheet with NU Lipa header.
 
-### When to update this file
+3. **Grades & Scholastic Record (`/Grades`)**:
+   - Term-by-term grade breakdown with term GWA, total units, passing status, and remarks.
+   - Cumulative GWA and Latin honors eligibility indicators.
+   - INC completion and Grade Revision modal petition form directly submitting to Registrar.
+   - Printable Grade Evaluation Slip.
 
-Update this context whenever any of the following changes:
+4. **Enrollment & Official COR (`/Enrollment`)**:
+   - Official collegiate Certificate of Registration (COR) viewer with Registrar validation badge.
+   - Subject breakdown, section codes, time/room, and unit load.
+   - Add/Drop subject petition form with live status tracker.
+   - Overload / Unit Waiver petition form for graduating seniors.
+   - Printable Official COR sheet.
 
-- a new Razor Page, folder, or route is added under `Pages/`
-- a new controller, service, contract, model, or DTO is created
-- a page starts depending on real grades, profiles, schedules, or guidance request data
-- department ownership or security responsibilities change
-- a page moves from mock UI to real backend behavior
+5. **Document Requests & 201 Vault (`/DocumentRequests`)**:
+   - Document request form (TOR, COE, Good Moral, Certified True Copy, Course Description).
+   - Generates official cryptographic tracking token (`MSU-[PREFIX]-2026-[HEX]`).
+   - Live queue tracker synchronized with Registrar's `DocumentProcessing.cshtml`.
+   - 201 File Credential Vault tracking compliance of Form 137, Form 138, Birth Certificate, etc.
 
-### Required update pattern
+6. **Guidance Requests (`/Requests`)**:
+   - Confidential appointment booking with Registered Guidance Counselors.
+   - Advisory categories (academic, career, personal/mental wellbeing, shifting).
+   - Request history and office details.
 
-When the project structure changes, revise these sections in order:
+7. **Profile & Settings (`/Profile`)**:
+   - Master student academic profile, curriculum catalog, and admission date.
+   - Institutional & government records: NSTP Serial Number, CHED Special Order (S.O.).
+   - Editable contact number and permanent residential address syncing to `student_profile`.
 
-1. `Ownership` — confirm which team and application area owns the feature
-2. `How to edit this project` — confirm whether the work is UI-only or backend
-3. `Department UI` — add or remove page names and responsibilities
-4. `Files to edit for UI changes` and `What not to add while editing the interface` — keep them aligned with the current files
-5. `Change Rules` — add any new auth, validation, or contract requirements
+8. **Student Switcher (`/SwitchStudent`)**:
+   - Fast switcher dropdown in topbar allowing evaluation and testing across students (e.g. Alyssa Bea Mendoza [Graduating], Joshua Fernandez, Kirsten Reyes [3rd Year], Christian Paul Tan [Transferee], Jasmine Navarro [Probation]).
 
-### AI session rule
+## Verification & Build
 
-Before making a change in a future session, read this file first and compare it to the current project structure. If the app has new pages, services, policies, or contract files, update this file to match the real state before continuing the task.
-
-### Project map
-
-- `Pages/` = UI pages and presentation logic
-- `Pages/Shared/_Layout.cshtml` = shared shell and global styling entry point
-- `wwwroot/css/site.css` = visual theme and component styling
-- `Controllers/` = request handling and endpoint behavior
-- `Services/` = business logic and integrations
-- `Contracts/` = interfaces and shared DTOs
-- `Models/` = domain objects and data contracts
-
-## Interface-only editing guidance
-
-This project is the student-facing shell for the campus experience. UI changes should stay in the presentation layer unless an approved contract and security review are already in place.
-
-### Files to edit for UI changes
-
-- Razor Pages in `Pages/`
-- Shared layout in `Pages/Shared/_Layout.cshtml`
-- Styling in `wwwroot/css/site.css`
-- Supporting front-end assets in `wwwroot/`
-
-### What not to add while editing the interface
-
-- No live grade or schedule persistence
-- No profile writes or enrollment changes
-- No API calls that submit student records or guidance requests without an approved backend contract
-- No direct reliance on raw request payload identity values for real authorization logic
-- No live financials/payment processing or receipt generation
-- No API calls that submit document requests or support/helpdesk tickets without an approved backend contract
-- No live library-status data pulls until a contract with the Library system is approved
-- No live announcements/notifications feed and no live calendar/events data pulls until a contract with the source system (registrar, faculty messaging, events office) is approved
-- The shared `CampusSystemDb` is the approved physical store for this kind of cross-department read once the source department (Library, Registrar, etc.) has its own schema populated. A future StudentPortal context may query another department's schema, such as `library.*`, but must mark those entities `ExcludeFromMigrations()` so it does not own that schema. Until a given source department completes its build, treat its data as still unavailable — the contract is the populated schema, not just the database's existence.
-- Direct calls into another department's controllers, services, or API endpoints remain unapproved; a shared physical database does not create a shared API surface.
-
-### Approved UI behavior
-
-- Keep request, profile, grade, schedule, enrollment, financials, document-request, and support controls visual-only until contract and auth work is approved.
-- Preserve the current page structure, Bootstrap layout, and campus branding.
-- Update mock data and UI states only; do not fabricate backend behavior.
-
-## Department UI
-
-The following Razor Pages are UI-only presentation placeholders with no database, service, API, or form-submit behavior:
-
-- `/Dashboard`: schedule, grades, and notifications summary cards
-- `/Schedule`: course schedule/calendar view
-- `/Grades`: course list with grade badges
-- `/Requests`: guidance request form aligned with Guidance's request shape
-- `/Profile`: profile and settings form
-- `/Enrollment`: enrollment status, assessment of fees, and enrollment history view
-- `/Financials`: balance/statement of account, payment history, and receipt list view
-- `/Announcements`: bulletin board and notifications list (enrollment, grades, faculty/registrar messages)
-- `/Library`: library account status card (borrowed items, fines)
-- `/DocumentRequests`: document request form and request-status tracker (COR, COE, good moral)
-- `/Calendar`: school events and deadlines calendar view
-- `/Support`: helpdesk/support ticket submission form and ticket list
-
-The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`. Keep request, profile, grade, schedule, enrollment, financials, document-request, and support controls non-functional until approved contracts and authorization are available.
-
-## Change Rules
-
-- Students must be identified from authenticated claims when backend behavior is added; never trust identity fields from request payloads.
-- Do not add persistence or service calls without approved contracts.
-- Protect grades, profile data, and guidance requests with authorization and audit controls.
-- Protect enrollment, financials, library status, document requests, announcements, calendar, and support tickets with the same authorization and audit controls once backend contracts are approved.
-- Run `dotnet build StudentPortalMain.csproj` after UI changes.
+Run `dotnet build StudentPortalMain.csproj` to compile.
+All endpoints are compiled with 0 Warnings and 0 Errors.

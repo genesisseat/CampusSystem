@@ -14,9 +14,10 @@ public abstract class RegistrarControllerBase(RegistrarDbContext db) : Controlle
     protected async Task<Student?> GetCurrentStudentAsync(CancellationToken cancellationToken)
     {
         var studentId = User.FindFirstValue("StudentId");
-        return string.IsNullOrWhiteSpace(studentId)
-            ? null
-            : await Db.Set<Student>().SingleOrDefaultAsync(student => student.Id == studentId, cancellationToken);
+        if (string.IsNullOrWhiteSpace(studentId) || !Guid.TryParse(studentId, out var parsedGuid))
+            return null;
+
+        return await Db.Set<Student>().SingleOrDefaultAsync(student => student.Id == parsedGuid, cancellationToken);
     }
 
     protected IActionResult MissingStudent() => Problem(

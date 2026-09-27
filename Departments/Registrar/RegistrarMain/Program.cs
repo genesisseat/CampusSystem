@@ -1,4 +1,4 @@
-﻿using CampusSystem.Sql;
+using CampusSystem.Sql;
 using FluentValidation;
 using RegistrarMain.HealthAndRepair;
 using Microsoft.AspNetCore.Authentication;
@@ -26,8 +26,10 @@ if (builder.Environment.IsDevelopment())
 }
 builder.Services.AddAuthorization();
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
-builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
-builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
+    options.UseSqlServer(campusConnection));
+builder.Services.AddScoped<IGuidanceRequestStore, SqlGuidanceRequestStore>();
+builder.Services.AddScoped<IRefreshTokenStore, SqlRefreshTokenStore>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentRequestService, StudentRequestService>();
@@ -36,6 +38,21 @@ builder.Services.AddScoped<ICsvImportService, CsvImportService>();
 builder.Services.AddSingleton<IPiiMaskingService, PiiMaskingService>();
 builder.Services.AddScoped<IOutboundMessageTransport, UnavailableOutboundMessageTransport>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// Registrar Portal Services & MySQL Connection
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(8);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+builder.Services.AddScoped<DatabaseService>();
+builder.Services.AddScoped<SettingsService>();
+builder.Services.AddTransient<MySqlConnector.MySqlConnection>(_ =>
+    new MySqlConnector.MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -49,16 +66,23 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 
 app.UseRouting();
+app.UseSession();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/Dashboard");
+    return Task.CompletedTask;
+});
+
 app.MapStaticAssets();
 app.MapControllers();
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapRazorPages();
 
 app.Run();
 

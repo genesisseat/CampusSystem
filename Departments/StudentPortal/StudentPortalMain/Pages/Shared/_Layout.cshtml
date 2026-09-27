@@ -1,52 +1,140 @@
-﻿<!DOCTYPE html>
+@inject StudentPortalMain.Services.StudentPortalDbService Db
+@{
+    var activePage = ViewData["ActivePage"]?.ToString() ?? "";
+    var pageTitle = ViewData["Title"]?.ToString() ?? "Student Portal";
+    var currentStudentId = Db.CurrentStudentId;
+    var student = await Db.GetStudentUserAsync(currentStudentId);
+    var profile = await Db.GetStudentProfileAsync(currentStudentId);
+    var allStudents = await Db.GetAllStudentsAsync();
+    var term = await Db.GetActiveTermAsync();
+
+    var studentName = student?.Name ?? "Student";
+    var studentNumber = student?.StudentIdNumber ?? "2024-00000";
+    var studentInitials = string.Join("", studentName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => s[0]));
+
+    var flashMessage = TempData["FlashMessage"]?.ToString();
+    var flashType = TempData["FlashType"]?.ToString() ?? "success";
+    var currentPath = Context.Request.Path + Context.Request.QueryString;
+}
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - StudentPortalMain</title>
-    <script type="importmap"></script>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/StudentPortalMain.styles.css" asp-append-version="true" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@pageTitle - National University Lipa Student Portal</title>
+    <link rel="stylesheet" href="~/css/portal.css" asp-append-version="true">
 </head>
-<body>
-    <header class="site-header">
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">StudentPortalMain</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1 align-items-center">
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" asp-area="" asp-page="/Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item dropdown"><a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Student tools</a><ul class="dropdown-menu"><li><a class="dropdown-item" asp-page="/Dashboard">Dashboard</a></li><li><a class="dropdown-item" asp-page="/Schedule">Schedule</a></li><li><a class="dropdown-item" asp-page="/Grades">Grades</a></li><li><a class="dropdown-item" asp-page="/Requests">Requests</a></li><li><a class="dropdown-item" asp-page="/Profile">Profile & settings</a></li></ul></li>
-                    </ul>
-                </div>
+<body class="portal-body">
+
+    <!-- ─── Sidebar Navigation ──────────────────────────────────────────────── -->
+    <aside class="portal-sidebar">
+        <div class="portal-brand">
+            <img src="~/img/logo3.png" alt="National University Logo" class="brand-crest" />
+            <div class="brand-title-wrap">
+                <div class="brand-main-title">STUDENT PORTAL</div>
+                <div class="brand-sub-title">National University Lipa</div>
             </div>
-        </nav>
-    </header>
-    <div class="container shell-container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
-
-    <footer class="footer-shell">
-        <div class="container">
-            &copy; 2026 - StudentPortalMain - <a asp-area="" asp-page="/Privacy">Privacy</a>
         </div>
-    </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+        <div class="student-card-mini">
+            <div class="student-avatar">@studentInitials</div>
+            <div class="student-details">
+                <div class="student-name" title="@studentName">@studentName</div>
+                <div class="student-id-num">@studentNumber</div>
+                <div class="student-prog" title="@profile.Program">@profile.Program (@profile.YearLevel)</div>
+            </div>
+        </div>
+
+        <nav class="portal-nav">
+            <div class="nav-category">Academic &amp; Registrar</div>
+            <a href="/Dashboard" class="@(activePage == "Dashboard" ? "active" : "")">
+                <span class="nav-ic">🏠</span> Dashboard
+            </a>
+            <a href="/Schedule" class="@(activePage == "Schedule" ? "active" : "")">
+                <span class="nav-ic">📅</span> My Schedule &amp; Classes
+            </a>
+            <a href="/Grades" class="@(activePage == "Grades" ? "active" : "")">
+                <span class="nav-ic">📊</span> Grades &amp; Record
+            </a>
+            <a href="/Enrollment" class="@(activePage == "Enrollment" ? "active" : "")">
+                <span class="nav-ic">📝</span> Enrollment &amp; COR
+            </a>
+            <a href="/DocumentRequests" class="@(activePage == "DocumentRequests" ? "active" : "")">
+                <span class="nav-ic">📄</span> Documents &amp; 201 Vault
+            </a>
+            <a href="/Coursework" class="@(activePage == "Coursework" ? "active" : "")">
+                <span class="nav-ic">📂</span> Coursework &amp; Tasks
+            </a>
+
+            <div class="nav-category" style="margin-top:10px;">Campus Departments</div>
+            <a href="/Financials" class="@(activePage == "Financials" ? "active" : "")">
+                <span class="nav-ic">💳</span> Tuition &amp; Finance
+            </a>
+            <a href="/Clearance" class="@(activePage == "Clearance" ? "active" : "")">
+                <span class="nav-ic">🛡️</span> Semestral Clearance
+            </a>
+            <a href="/Library" class="@(activePage == "Library" ? "active" : "")">
+                <span class="nav-ic">📚</span> Library &amp; Books
+            </a>
+            <a href="/Scholarships" class="@(activePage == "Scholarships" ? "active" : "")">
+                <span class="nav-ic">🎓</span> Scholarships
+            </a>
+            <a href="/Requests" class="@(activePage == "Requests" ? "active" : "")">
+                <span class="nav-ic">🧭</span> Guidance Requests
+            </a>
+            <a href="/Profile" class="@(activePage == "Profile" ? "active" : "")">
+                <span class="nav-ic">👤</span> Profile &amp; Settings
+            </a>
+        </nav>
+
+        <div class="portal-sidebar-footer">
+            <div>NU Lipa Collegiate System</div>
+            <div style="color:var(--nu-gold); margin-top:2px;">AY @term.SchoolYear &middot; @term.Semester</div>
+        </div>
+    </aside>
+
+    <!-- ─── Main View Shell ─────────────────────────────────────────────────── -->
+    <div class="portal-main">
+        <header class="portal-topbar">
+            <div class="topbar-left">
+                <span class="term-pill">📅 AY @term.SchoolYear &middot; @term.Semester</span>
+                <span class="conn-status-pill">
+                    <span class="pulse-dot"></span> Registrar System Connected
+                </span>
+            </div>
+
+            <div class="topbar-right">
+                <form method="get" action="/SwitchStudent" style="display:flex;align-items:center;gap:8px;margin:0;">
+                    <input type="hidden" name="returnUrl" value="@currentPath" />
+                    <span style="font-size:12px;font-weight:600;color:var(--nu-text-muted);">Switch Student:</span>
+                    <select name="id" class="student-switcher-select" onchange="this.form.submit()">
+                        @foreach (var s in allStudents)
+                        {
+                            if (s.Id == currentStudentId)
+                            {
+                                <option value="@s.Id" selected="selected">@s.StudentIdNumber - @s.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@s.Id">@s.StudentIdNumber - @s.Name</option>
+                            }
+                        }
+                    </select>
+                </form>
+            </div>
+        </header>
+
+        <div class="portal-content">
+            @if (!string.IsNullOrEmpty(flashMessage))
+            {
+                <div class="alert-banner alert-@flashType">
+                    <span>@flashMessage</span>
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </div>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

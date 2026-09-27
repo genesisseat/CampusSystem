@@ -1,0 +1,106 @@
+@page
+@model StudentPortalMain.Pages.CourseworkModel
+@{
+    ViewData["Title"] = "Coursework & Assignments";
+    ViewData["ActivePage"] = "Coursework";
+}
+
+<div class="portal-page-header">
+    <div>
+        <div style="font-size:12px; font-weight:700; color:var(--nu-blue); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">
+            Faculty LMS &amp; Academic Tasks
+        </div>
+        <h1 class="portal-page-title">Coursework, Assignments &amp; Submissions</h1>
+        <p class="portal-page-subtitle">
+            Synchronized with Faculty Classroom Portal — track deadlines, submit laboratory outputs, and view scores.
+        </p>
+    </div>
+</div>
+
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h3 class="portal-card-title">
+            <span>📝</span> Active Class Coursework
+        </h3>
+        <span style="font-size:12px; color:var(--nu-text-muted);">
+            @Model.Assignments.Count(a => a.IsSubmitted) / @Model.Assignments.Count Submitted
+        </span>
+    </div>
+    <div class="portal-card-body" style="padding:0;">
+        @if (Model.Assignments.Any())
+        {
+            <div class="portal-table-responsive">
+                <table class="portal-table">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Assignment Title &amp; Details</th>
+                            <th>Max Score</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Assignments)
+                        {
+                            <tr>
+                                <td>
+                                    <strong style="color:var(--nu-blue-dark);">@a.SubjectCode</strong>
+                                    <div style="font-size:11px; color:var(--nu-text-muted);">@a.SubjectName</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight:700; font-size:13.5px;">@a.Title</div>
+                                    <div style="font-size:12px; color:var(--nu-text-muted); margin-top:2px;">@a.Description</div>
+                                </td>
+                                <td>
+                                    <strong>@(a.MyScore.HasValue ? a.MyScore.Value.ToString("0") : "—")</strong> / @a.MaxScore.ToString("0") pts
+                                </td>
+                                <td style="font-size:12px;">
+                                    <strong style="color:@(a.DueDate < DateTime.UtcNow && !a.IsSubmitted ? "#b91c1c" : "inherit");">
+                                        @a.DueDate.ToString("MMM dd, yyyy")
+                                    </strong>
+                                </td>
+                                <td>
+                                    @if (a.IsSubmitted)
+                                    {
+                                        <span class="badge-status badge-success">✓ Submitted</span>
+                                    }
+                                    else if (a.DueDate < DateTime.UtcNow)
+                                    {
+                                        <span class="badge-status badge-danger">Past Due</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status badge-warning">Pending Submission</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!a.IsSubmitted)
+                                    {
+                                        <form method="post" asp-page-handler="SubmitWork" style="margin:0;">
+                                            <input type="hidden" name="assignmentId" value="@a.Id" />
+                                            <button type="submit" class="btn-nu btn-nu-primary btn-sm">
+                                                Turn In
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span style="font-size:12px; color:#15803d; font-weight:600;">Turned In</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div style="padding:48px; text-align:center; color:var(--nu-text-muted);">
+                <p>No active coursework assignments posted.</p>
+            </div>
+        }
+    </div>
+</div>
