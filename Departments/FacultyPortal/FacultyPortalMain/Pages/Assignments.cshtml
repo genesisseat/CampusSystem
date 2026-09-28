@@ -1,0 +1,200 @@
+@page
+@{
+    ViewData["Title"] = "Assignments";
+    ViewData["ActivePage"] = "Assignments";
+}
+
+<div class="portal-page-header">
+    <div>
+        <div class="portal-eyebrow">Coursework</div>
+        <h1 class="portal-page-title">Assignments</h1>
+        <p class="portal-page-subtitle">Create assignments and activities, set due dates, and review student work. Demo data only.</p>
+    </div>
+    <div class="page-actions">
+        <a href="#create" class="btn-nu btn-nu-gold">＋ New assignment</a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Published</div>
+        <div class="stat-value">5</div>
+        <div class="stat-subtext">Visible to students</div>
+    </div>
+    <div class="stat-card gold-border">
+        <div class="stat-label">To grade</div>
+        <div class="stat-value">18</div>
+        <div class="stat-subtext">Submissions waiting for a score</div>
+    </div>
+    <div class="stat-card info-border">
+        <div class="stat-label">Due this week</div>
+        <div class="stat-value">2</div>
+        <div class="stat-subtext">Assignments closing soon</div>
+    </div>
+    <div class="stat-card green-border">
+        <div class="stat-label">Drafts</div>
+        <div class="stat-value">1</div>
+        <div class="stat-subtext">Not yet published</div>
+    </div>
+</div>
+
+<div class="portal-card">
+    <div class="portal-card-header">
+        <h3 class="portal-card-title"><span>📝</span> Your assignments</h3>
+    </div>
+    <div class="toolbar">
+        <select class="form-select" aria-label="Section">
+            <option>All sections</option>
+            <option>IT301-A Computer Networks</option>
+            <option>IT402-B Network Security</option>
+        </select>
+        <select class="form-select" aria-label="Status">
+            <option>All statuses</option>
+            <option>Draft</option>
+            <option>Published</option>
+            <option>Closed</option>
+        </select>
+        <input type="text" class="form-control" placeholder="Search by title" aria-label="Search assignments" />
+    </div>
+    <div class="portal-table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Section</th>
+                    <th>Type</th>
+                    <th>Due</th>
+                    <th class="num">Submitted</th>
+                    <th class="num">Graded</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><div class="cell-title">Subnetting Lab</div><div class="cell-sub">Max score 50</div></td>
+                    <td>IT301-A</td>
+                    <td>Lab</td>
+                    <td>Oct 6, 2026 &middot; 11:59 PM</td>
+                    <td class="num">24 / 32</td>
+                    <td class="num">10</td>
+                    <td><span class="badge-status badge-success">Published</span></td>
+                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-title">Firewall Rules Activity</div><div class="cell-sub">Max score 30</div></td>
+                    <td>IT402-B</td>
+                    <td>Project</td>
+                    <td>Oct 9, 2026 &middot; 5:00 PM</td>
+                    <td class="num">6 / 28</td>
+                    <td class="num">0</td>
+                    <td><span class="badge-status badge-success">Published</span></td>
+                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-title">Quiz 1: OSI Model</div><div class="cell-sub">Max score 20</div></td>
+                    <td>IT301-A</td>
+                    <td>Quiz</td>
+                    <td>Sep 22, 2026 &middot; 11:59 PM</td>
+                    <td class="num">32 / 32</td>
+                    <td class="num">32</td>
+                    <td><span class="badge-status badge-secondary">Closed</span></td>
+                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-title">Midterm Case Study</div><div class="cell-sub">Max score 100</div></td>
+                    <td>IT402-B</td>
+                    <td>Exam</td>
+                    <td class="muted">Not set</td>
+                    <td class="num muted">&ndash;</td>
+                    <td class="num muted">&ndash;</td>
+                    <td><span class="badge-status badge-warning">Draft</span></td>
+                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Edit</a></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="portal-card" id="create">
+    <div class="portal-card-header">
+        <h3 class="portal-card-title"><span>＋</span> New assignment</h3>
+        <span class="badge-status badge-secondary">Draft</span>
+    </div>
+    <div class="portal-card-body">
+        <div class="form-grid">
+            <div class="form-group form-span">
+                <label class="form-label" for="a-title">Title</label>
+                <input id="a-title" type="text" class="form-control" placeholder="e.g. Subnetting Lab" />
+            </div>
+            <div class="form-group form-span">
+                <label class="form-label" for="a-instructions">Instructions</label>
+                <textarea id="a-instructions" class="form-control" rows="4" placeholder="What should students do and hand in?"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-section">Section</label>
+                <select id="a-section" class="form-select">
+                    <option>IT301-A Computer Networks</option>
+                    <option>IT402-B Network Security</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-type">Type</label>
+                <select id="a-type" class="form-select">
+                    <option>Assignment</option>
+                    <option>Activity</option>
+                    <option>Quiz</option>
+                    <option>Lab</option>
+                    <option>Project</option>
+                    <option>Exam</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-due">Due date and time</label>
+                <input id="a-due" type="datetime-local" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-max">Max score</label>
+                <input id="a-max" type="number" class="form-control" value="100" min="1" />
+            </div>
+        </div>
+
+        <div class="form-section-title">Student uploads</div>
+        <div class="form-grid">
+            <div class="form-group form-span">
+                <div class="form-label">Accepted file types</div>
+                <div class="check-row">
+                    <label class="check-item"><input type="checkbox" checked /> Images (JPG, PNG)</label>
+                    <label class="check-item"><input type="checkbox" checked /> PDF</label>
+                    <label class="check-item"><input type="checkbox" checked /> Word</label>
+                    <label class="check-item"><input type="checkbox" checked /> Excel</label>
+                    <label class="check-item"><input type="checkbox" checked /> PowerPoint</label>
+                    <label class="check-item"><input type="checkbox" checked /> Text</label>
+                    <label class="check-item"><input type="checkbox" /> ZIP</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-size">Max size per file (MB)</label>
+                <input id="a-size" type="number" class="form-control" value="25" min="1" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="a-count">Max files per submission</label>
+                <input id="a-count" type="number" class="form-control" value="5" min="1" />
+            </div>
+            <div class="form-group form-span">
+                <label class="check-item"><input type="checkbox" /> Accept late submissions after the due date</label>
+            </div>
+        </div>
+
+        <div class="form-section-title">Instructions file (optional)</div>
+        <div class="dropzone">
+            <div class="dropzone-title">Attach a file for students</div>
+            <div class="dropzone-sub">Rubric, worksheet or reference. Images, PDF, Word, Excel, PowerPoint.</div>
+            <button type="button" class="btn-nu btn-nu-outline btn-sm">Choose file</button>
+        </div>
+    </div>
+    <div class="card-footer-actions">
+        <button type="button" class="btn-nu btn-nu-outline">Save draft</button>
+        <button type="button" class="btn-nu btn-nu-gold">Publish to students</button>
+    </div>
+</div>

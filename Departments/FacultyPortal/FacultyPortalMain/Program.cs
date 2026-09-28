@@ -1,7 +1,8 @@
-﻿using CampusSystem.Sql;
-using FluentValidation;
+using CampusSystem.Sql;
 using FacultyPortalMain.Contracts;
+using FacultyPortalMain.Data;
 using FacultyPortalMain.Services;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,15 +10,15 @@ var builder = WebApplication.CreateBuilder(args);
 var campusConnection = CampusSystemDbConnector.Resolve(
     builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
 
-builder.Services.AddDbContextFactory<DbContext>(options =>
+builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
     options.UseSqlServer(campusConnection));
 
 // Add services to the container.
 // Guidance services
 builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
-builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
-builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
+builder.Services.AddSingleton<IGuidanceRequestStore, SqlGuidanceRequestStore>();
+builder.Services.AddSingleton<IRefreshTokenStore, SqlRefreshTokenStore>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentRequestService, StudentRequestService>();
@@ -26,6 +27,7 @@ builder.Services.AddScoped<ICsvImportService, CsvImportService>();
 builder.Services.AddSingleton<IPiiMaskingService, PiiMaskingService>();
 builder.Services.AddScoped<IOutboundMessageTransport, UnavailableOutboundMessageTransport>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<FacultyDbService>();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();

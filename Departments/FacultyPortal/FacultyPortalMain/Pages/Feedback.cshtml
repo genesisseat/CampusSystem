@@ -1,4 +1,61 @@
 @page
-@{ ViewData["Title"] = "Assignment Feedback"; }
-<div class="page-heading"><div><span class="eyebrow">Student feedback</span><h1>Assignment comments</h1><p class="text-muted">Review submissions and prepare feedback.</p></div><button class="btn btn-dark">Post feedback</button></div>
-<div class="row g-4"><div class="col-lg-5"><div class="surface p-4"><h2 class="h5">Submissions</h2><div class="empty-state">No submissions waiting for review.</div></div></div><div class="col-lg-7"><div class="surface p-4"><label class="form-label">Feedback</label><textarea class="form-control" rows="8" placeholder="Write a private comment"></textarea><div class="d-flex justify-content-between mt-3"><span class="text-muted small">Draft · not published</span><button class="btn btn-outline-dark">Save draft</button></div></div></div></div>
+@{
+    ViewData["Title"] = "Feedback";
+    ViewData["ActivePage"] = "Feedback";
+}
+
+<div class="portal-page-header">
+    <div>
+        <div class="portal-eyebrow">Student communication</div>
+        <h1 class="portal-page-title">Feedback</h1>
+        <p class="portal-page-subtitle">Write comments on a student's submission. Demo data only.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-nu btn-nu-gold">💾 Save feedback</button>
+    </div>
+</div>
+
+<div class="split-grid">
+    <div class="portal-card">
+        <div class="portal-card-header">
+            <h3 class="portal-card-title"><span>💬</span> Write feedback</h3>
+        </div>
+        <div class="portal-card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="assignment">Assignment</label>
+                    <select id="assignment" class="form-select">
+                        <option>Subnetting Lab (IT301-A)</option>
+                        <option>Firewall Rules (IT402-B)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="student">Student</label>
+                    <select id="student" class="form-select">
+                        <option>Sample Student 1</option>
+                        <option>Sample Student 2</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="comment">Comment</label>
+                <textarea id="comment" class="form-control" rows="6" placeholder="Write feedback for this submission"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="portal-card">
+        <div class="portal-card-header">
+            <h3 class="portal-card-title"><span>🗂️</span> Previous comments</h3>
+        </div>
+        <div class="portal-card-body">
+            <ul class="list-plain">
+                <li>
+                    <div class="cell-title">Sample Student 1</div>
+                    <div class="cell-sub">Good work. Check your subnet masks in part 3.</div>
+                </li>
+                <li class="muted">No other comments yet.</li>
+            </ul>
+        </div>
+    </div>
+</div>

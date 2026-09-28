@@ -50,6 +50,7 @@
               <th>Type</th>
               <th>Enrolled Load</th>
               <th>Academic Status</th>
+              <th>Finance Clearance</th>
               <th>Submitted</th>
               <th style="text-align:right;">Validation Action</th>
             </tr>
@@ -72,6 +73,11 @@
                   <div style="font-size:11px;color:#64748b;">@enr.SubjectsCount subjects</div>
                 </td>
                 <td><span class="badge badge-@(enr.AcademicStatus.ToLower().Replace(" ", "_"))">@enr.AcademicStatus</span></td>
+                <td>
+                  <span class="badge badge-@(enr.FinanceClearanceStatus.ToLower() == "cleared" ? "active" : "pending")">
+                    @(enr.FinanceClearanceStatus.ToLower() == "cleared" ? "✓ Cleared" : "⚠️ " + enr.FinanceClearanceStatus)
+                  </span>
+                </td>
                 <td>@enr.EnrolledAt.ToString("MMM dd, yyyy hh:mm tt")</td>
                 <td style="text-align:right;">
                   <form method="post" asp-page-handler="EnrollmentAction" style="display:inline-flex;gap:6px;">

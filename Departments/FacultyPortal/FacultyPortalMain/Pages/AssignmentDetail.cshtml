@@ -1,0 +1,135 @@
+@page
+@{
+    ViewData["Title"] = "Assignment";
+    ViewData["ActivePage"] = "Assignments";
+}
+
+<div class="portal-page-header">
+    <div>
+        <div class="portal-eyebrow"><a href="/Assignments" class="back-link">&larr; Assignments</a></div>
+        <h1 class="portal-page-title">Subnetting Lab</h1>
+        <p class="portal-page-subtitle">IT301-A Computer Networks &middot; Lab &middot; Max score 50. Demo data only.</p>
+    </div>
+    <div class="page-actions">
+        <button type="button" class="btn-nu btn-nu-outline">Edit</button>
+        <button type="button" class="btn-nu btn-nu-outline">Close assignment</button>
+        <button type="button" class="btn-nu btn-nu-gold">Release grades</button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-label">Due</div>
+        <div class="stat-value stat-value-sm">Oct 6, 11:59 PM</div>
+        <div class="stat-subtext">Late submissions off</div>
+    </div>
+    <div class="stat-card green-border">
+        <div class="stat-label">Submitted</div>
+        <div class="stat-value">24 / 32</div>
+        <div class="stat-subtext">8 not submitted</div>
+    </div>
+    <div class="stat-card gold-border">
+        <div class="stat-label">Graded</div>
+        <div class="stat-value">10</div>
+        <div class="stat-subtext">14 waiting for a score</div>
+    </div>
+    <div class="stat-card info-border">
+        <div class="stat-label">Grades</div>
+        <div class="stat-value stat-value-sm">Hidden</div>
+        <div class="stat-subtext">Students can't see scores yet</div>
+    </div>
+</div>
+
+<div class="split-grid">
+    <div class="portal-card">
+        <div class="portal-card-header">
+            <h3 class="portal-card-title"><span>📥</span> Submissions</h3>
+        </div>
+        <div class="toolbar">
+            <select class="form-select" aria-label="Filter by status">
+                <option>All students</option>
+                <option>Submitted</option>
+                <option>Late</option>
+                <option>Graded</option>
+                <option>Not submitted</option>
+            </select>
+            <input type="text" class="form-control" placeholder="Search student" aria-label="Search student" />
+        </div>
+        <div class="portal-table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Submitted</th>
+                        <th class="num">Files</th>
+                        <th>Status</th>
+                        <th class="num">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="row-selected">
+                        <td><div class="cell-title">Sample Student 1</div><div class="cell-sub">2026-0001</div></td>
+                        <td>Oct 5 &middot; 8:14 PM</td>
+                        <td class="num">3</td>
+                        <td><span class="badge-status badge-success">Graded</span></td>
+                        <td class="num">44 / 50</td>
+                    </tr>
+                    <tr>
+                        <td><div class="cell-title">Sample Student 2</div><div class="cell-sub">2026-0002</div></td>
+                        <td>Oct 6 &middot; 10:52 PM</td>
+                        <td class="num">1</td>
+                        <td><span class="badge-status badge-info">Submitted</span></td>
+                        <td class="num muted">&ndash; / 50</td>
+                    </tr>
+                    <tr>
+                        <td><div class="cell-title">Sample Student 3</div><div class="cell-sub">2026-0003</div></td>
+                        <td>Oct 7 &middot; 9:03 AM</td>
+                        <td class="num">2</td>
+                        <td><span class="badge-status badge-warning">Late</span></td>
+                        <td class="num muted">&ndash; / 50</td>
+                    </tr>
+                    <tr>
+                        <td><div class="cell-title">Sample Student 4</div><div class="cell-sub">2026-0004</div></td>
+                        <td class="muted">&ndash;</td>
+                        <td class="num muted">0</td>
+                        <td><span class="badge-status badge-danger">Not submitted</span></td>
+                        <td class="num muted">&ndash; / 50</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="portal-card">
+        <div class="portal-card-header">
+            <h3 class="portal-card-title"><span>✏️</span> Grade submission</h3>
+        </div>
+        <div class="portal-card-body">
+            <div class="cell-title">Sample Student 1</div>
+            <div class="cell-sub">Submitted Oct 5, 2026 &middot; 8:14 PM</div>
+
+            <div class="form-section-title">Submitted files</div>
+            <ul class="file-list">
+                <li><span class="file-icon">📄</span><div class="file-meta"><div class="cell-title">subnetting-lab.pdf</div><div class="cell-sub">PDF &middot; 1.2 MB</div></div><button type="button" class="btn-nu btn-nu-outline btn-sm">Download</button></li>
+                <li><span class="file-icon">🖼️</span><div class="file-meta"><div class="cell-title">topology-diagram.png</div><div class="cell-sub">Image &middot; 640 KB</div></div><button type="button" class="btn-nu btn-nu-outline btn-sm">Preview</button></li>
+                <li><span class="file-icon">📊</span><div class="file-meta"><div class="cell-title">address-table.xlsx</div><div class="cell-sub">Excel &middot; 48 KB</div></div><button type="button" class="btn-nu btn-nu-outline btn-sm">Download</button></li>
+            </ul>
+
+            <div class="form-section-title">Score and feedback</div>
+            <div class="form-group">
+                <label class="form-label" for="g-score">Score (max 50)</label>
+                <input id="g-score" type="number" class="form-control score-input" value="44" min="0" max="50" />
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="g-feedback">Feedback</label>
+                <textarea id="g-feedback" class="form-control" rows="4" placeholder="Comments for the student">Good work. Check your subnet masks in part 3.</textarea>
+            </div>
+            <label class="check-item"><input type="checkbox" /> Release this grade to the student</label>
+        </div>
+        <div class="card-footer-actions">
+            <button type="button" class="btn-nu btn-nu-outline">Previous</button>
+            <button type="button" class="btn-nu btn-nu-outline">Next</button>
+            <button type="button" class="btn-nu btn-nu-gold">Save grade</button>
+        </div>
+    </div>
+</div>

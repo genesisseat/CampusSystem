@@ -41,6 +41,7 @@ public class EnrollmentValidationModel : PageModel
         public string YearLevel { get; set; } = "";
         public string AcademicStatus { get; set; } = "";
         public int SubjectsCount { get; set; }
+        public string FinanceClearanceStatus { get; set; } = "Cleared";
     }
 
     public class PendingAddDropItem
@@ -101,7 +102,8 @@ public class EnrollmentValidationModel : PageModel
         var pEnrollments = await conn.QueryAsync<PendingEnrollmentItem>(
             "SELECT e.id, e.school_year AS SchoolYear, e.semester, e.enrollment_type AS EnrollmentType, e.total_units AS TotalUnits, e.enrolled_at AS EnrolledAt, " +
             "u.name, u.student_id_number AS StudentIdNumber, u.email, sp.program, sp.year_level AS YearLevel, sp.academic_status AS AcademicStatus, " +
-            "(SELECT COUNT(*) FROM enrolled_subjects es WHERE es.enrollment_id = e.id) as SubjectsCount " +
+            "(SELECT COUNT(*) FROM enrolled_subjects es WHERE es.enrollment_id = e.id) as SubjectsCount, " +
+            "COALESCE((SELECT sc.status FROM student_clearance sc WHERE sc.student_id = e.student_id AND sc.department_name = 'Finance & Accounting Office' ORDER BY sc.id DESC LIMIT 1), 'Cleared') AS FinanceClearanceStatus " +
             "FROM enrollments e " +
             "JOIN `user` u ON u.id = e.student_id " +
             "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
@@ -175,9 +177,46 @@ public class EnrollmentValidationModel : PageModel
                 }
                 await trans.CommitAsync();
 
+                var financeNote = "";
+                if (newStatus == "active")
+                {
+                    try
+                    {
+                        var studentInfo = await conn.QueryFirstOrDefaultAsync<(string FullName, string StudentNumber, string Program, int TotalUnits)>(
+                            @"SELECT u.full_name AS FullName, sp.student_id_number AS StudentNumber, 
+                                     sp.program AS Program, COALESCE(e.total_units, 21) AS TotalUnits
+                              FROM enrollments e
+                              JOIN user u ON u.id = e.student_id
+                              LEFT JOIN student_profile sp ON sp.user_id = e.student_id
+                              WHERE e.id = @id", new { id = enrollment_id });
+
+                        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+                        var assessmentPayload = new
+                        {
+                            studentGuid = Guid.NewGuid().ToString(),
+                            studentNumber = !string.IsNullOrWhiteSpace(studentInfo.StudentNumber) ? studentInfo.StudentNumber : $"2026-{enr.StudentId:D5}",
+                            studentName = !string.IsNullOrWhiteSpace(studentInfo.FullName) ? studentInfo.FullName : "Enrolled Student",
+                            program = !string.IsNullOrWhiteSpace(studentInfo.Program) ? studentInfo.Program : "BS Information Technology",
+                            academicYear = !string.IsNullOrWhiteSpace(enr.SchoolYear) ? enr.SchoolYear : "2026-2027",
+                            semester = !string.IsNullOrWhiteSpace(enr.Semester) ? enr.Semester : "1st Semester",
+                            totalUnits = studentInfo.TotalUnits > 0 ? studentInfo.TotalUnits : 21
+                        };
+
+                        var response = await httpClient.PostAsJsonAsync("http://localhost:5124/api/finance/assess", assessmentPayload);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            financeNote = " &middot; Official Assessment Order (OAO) generated &amp; linked in Finance System";
+                        }
+                    }
+                    catch
+                    {
+                        // Graceful degradation if Finance is temporarily unavailable
+                    }
+                }
+
                 var verb = newStatus == "active" ? "approved and officially validated" : "rejected";
                 await _db.LogActivityAsync(enr.StudentId, $"Enrollment for AY {enr.SchoolYear} {enr.Semester} {verb} by {_db.CurrentUserName}.");
-                TempData["FlashMessage"] = $"Enrollment #{enrollment_id} has been {verb}.";
+                TempData["FlashMessage"] = $"Enrollment #{enrollment_id} has been {verb}{financeNote}.";
                 TempData["FlashType"] = "success";
             }
             catch (Exception ex)

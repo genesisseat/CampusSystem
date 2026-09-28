@@ -1,48 +1,116 @@
-@page
-@page
-@{
-    ViewData["Title"] = "Make a payment";
+using FinanceMain.Contracts;
+using FinanceMain.Contracts.Dtos;
+using FinanceMain.Security;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace FinanceMain.Pages
+{
+    // Phase 4: rewires the original "/Pay: make-a-payment form; UI only"
+    // placeholder into a functional form, per the execution plan's Phase 4
+    // table ("IPaymentService — Form becomes functional, posts to
+    // service"). Student-only, and always pays against the CURRENT
+    // logged-in student's own current-term assessment.
+    public class PayModel : PageModel
+    {
+        private readonly IAssessmentService _assessmentService;
+        private readonly IPaymentService _paymentService;
+        private readonly CurrentUserContext _currentUser;
+
+        public PayModel(
+            IAssessmentService assessmentService,
+            IPaymentService paymentService,
+            CurrentUserContext currentUser)
+        {
+            _assessmentService = assessmentService;
+            _paymentService = paymentService;
+            _currentUser = currentUser;
+        }
+
+        public const string AcademicYear = "2026-2027";
+        public const string Semester = "1st Semester";
+
+        public FeeAssessmentDto? Assessment { get; private set; }
+
+        [BindProperty]
+        public decimal AmountPaid { get; set; }
+
+        [BindProperty]
+        public string PaymentMethod { get; set; } = "Over-the-counter";
+
+        [BindProperty]
+        public string? ReferenceNumber { get; set; }
+
+        [TempData]
+        public string? StatusMessage { get; set; }
+
+        [TempData]
+        public string? ErrorMessage { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int? AssessmentId { get; set; }
+
+        public async Task OnGetAsync(int? assessmentId = null)
+        {
+            if (assessmentId.HasValue && assessmentId.Value > 0)
+            {
+                AssessmentId = assessmentId;
+                Assessment = await _assessmentService.GetByIdAsync(assessmentId.Value);
+            }
+            else
+            {
+                var studentId = _currentUser.GetCurrentStudentId();
+                Assessment = await _assessmentService.GetCurrentForStudentAsync(studentId, AcademicYear, Semester);
+                if (Assessment != null) AssessmentId = Assessment.Id;
+            }
+
+            if (Assessment != null)
+            {
+                AmountPaid = Assessment.Balance;
+                ViewData["StudentName"] = Assessment.StudentDisplayName;
+                ViewData["StudentProgram"] = $"{Assessment.Program} · Student";
+                ViewData["StudentInitials"] = string.Join("", Assessment.StudentDisplayName
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                    .Where(w => char.IsLetter(w[0]))
+                    .Take(2)
+                    .Select(w => w[0]));
+            }
+        }
+
+        public async Task<IActionResult> OnPostAsync()
+        {
+            if (AssessmentId.HasValue && AssessmentId.Value > 0)
+            {
+                Assessment = await _assessmentService.GetByIdAsync(AssessmentId.Value);
+            }
+            else
+            {
+                var studentId = _currentUser.GetCurrentStudentId();
+                Assessment = await _assessmentService.GetCurrentForStudentAsync(studentId, AcademicYear, Semester);
+            }
+
+            if (Assessment == null)
+            {
+                ErrorMessage = "No fee assessment on file for the current term — nothing to pay.";
+                return Page();
+            }
+
+            try
+            {
+                var payment = await _paymentService.RecordPaymentAsync(new RecordPaymentRequest(
+                    FeeAssessmentId: Assessment.Id,
+                    AmountPaid: AmountPaid,
+                    PaymentMethod: PaymentMethod,
+                    ReferenceNumber: ReferenceNumber));
+
+                StatusMessage = $"Payment {payment.PaymentNumber} recorded — {payment.AmountPaid:₱#,##0.00}.";
+                return RedirectToPage("/Receipt", new { paymentNumber = payment.PaymentNumber });
+            }
+            catch (FinanceValidationException ex)
+            {
+                ErrorMessage = ex.Message;
+                return Page();
+            }
+        }
+    }
 }
-
-<div class="page-heading">
-    <div>
-        <span class="eyebrow">Payment center</span>
-        <h1>Make a payment</h1>
-        <p class="text-muted">This form is a preview and does not process payments.</p>
-    </div>
-</div>
-
-<div class="surface p-4" style="max-width: 640px">
-    <form>
-        <label class="form-label" for="accountNumber">Account or Reference No.</label>
-        <div class="input-group mb-3">
-            <span class="input-group-text"><i class="bi bi-person"></i></span>
-            <input id="accountNumber" class="form-control" type="text" placeholder="Enter account or reference number" />
-        </div>
-
-        <label class="form-label" for="amount">Amount</label>
-        <div class="input-group mb-3">
-            <span class="input-group-text">$</span>
-            <input id="amount" class="form-control" type="number" step="0.01" placeholder="0.00" />
-        </div>
-
-        <label class="form-label" for="paymentMethod">Payment method</label>
-        <select id="paymentMethod" class="form-select mb-3">
-            <option selected disabled>Select a method</option>
-            <option value="bank">Bank transfer</option>
-            <option value="card">Card</option>
-            <option value="paypal">PayPal</option>
-            <option value="crypto">Cryptocurrency</option>
-        </select>
-
-        <label class="form-label" for="paymentNotes">Notes (Optional)</label>
-        <div class="mb-3">
-            <textarea id="paymentNotes" class="form-control" rows="2" placeholder="Add a note or description..."></textarea>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center">
-            <button class="btn btn-outline-secondary" type="reset">Clear</button>
-            <button class="btn btn-dark" type="button">Continue</button>
-        </div>
-    </form>
-</div>

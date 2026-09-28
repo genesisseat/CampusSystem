@@ -159,6 +159,14 @@
       <div class="label">Guidance Clearance</div>
       <div class="value"><span class="badge badge-@(Model.Profile.GuidanceClearanceStatus.ToLower())">@Model.Profile.GuidanceClearanceStatus</span></div>
     </div>
+    <div class="stat-mini">
+      <div class="label">Finance Clearance</div>
+      <div class="value"><span class="badge badge-@(Model.FinanceClearanceStatus.ToLower() == "cleared" ? "verified" : "pending")">@Model.FinanceClearanceStatus</span></div>
+    </div>
+    <div class="stat-mini">
+      <div class="label">Total Paid (Finance)</div>
+      <div class="value" style="color:var(--success);">₱@Model.TotalPaidAmount.ToString("N2")</div>
+    </div>
   </div>
 
   <!-- 201 Credentials Vault -->

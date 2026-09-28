@@ -1,8 +1,10 @@
-﻿using FinanceMain.Contracts;
-using FinanceMain.Data;
+﻿using GuidanceDepartmentMain.Services; // Tells it to use Guidance's version of Records/Enums
+using GuidanceDepartmentMain.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace FinanceMain.Services;
+// If you have a Contracts namespace inside GuidanceDepartmentMain, add this:
+using GuidanceDepartmentMain.Contracts; 
+
 
 public sealed class SqlGuidanceRequestStore(IDbContextFactory<GuidanceDbContext> dbContextFactory) : IGuidanceRequestStore
 {

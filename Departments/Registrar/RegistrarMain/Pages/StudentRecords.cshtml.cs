@@ -42,6 +42,8 @@ public class StudentRecordsModel : PageModel
     public List<DocumentCredential> Vault { get; set; } = new();
     public List<StudentGradeRecord> StudentGrades { get; set; } = new();
     public List<TransfereeCreditedRecord> CreditedSubjects { get; set; } = new();
+    public string FinanceClearanceStatus { get; set; } = "Cleared";
+    public decimal TotalPaidAmount { get; set; } = 0;
 
     public class StudentListItem
     {
@@ -168,6 +170,23 @@ public class StudentRecordsModel : PageModel
                 "WHERE tcs.student_id = @id",
                 new { id = ViewId });
             CreditedSubjects = credited.AsList();
+
+            try
+            {
+                var finClearance = await conn.QueryFirstOrDefaultAsync<string>(
+                    "SELECT status FROM `student_clearance` WHERE student_id = @id AND department_name = 'Finance & Accounting Office' ORDER BY id DESC LIMIT 1",
+                    new { id = ViewId });
+                if (!string.IsNullOrEmpty(finClearance)) FinanceClearanceStatus = finClearance;
+
+                var paid = await conn.ExecuteScalarAsync<decimal?>(
+                    "SELECT SUM(amount) FROM `student_payments` WHERE student_id = @id",
+                    new { id = ViewId });
+                TotalPaidAmount = paid ?? 0;
+            }
+            catch
+            {
+                // Resilient fallback if tables are empty
+            }
         }
         else
         {

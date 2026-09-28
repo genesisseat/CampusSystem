@@ -1,33 +1,32 @@
-@page
-@page
-@{
-    ViewData["Title"] = "Payment History";
+using FinanceMain.Contracts;
+using FinanceMain.Contracts.Dtos;
+using FinanceMain.Security;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+
+namespace FinanceMain.Pages
+{
+    // Phase 4: rewires the original "/Payments: payment history table"
+    // placeholder into the admin-wide payment log (every student, most
+    // recent first), backed by the IPaymentService.ListAsync method added
+    // in Phase 4. A student's OWN payment history lives on /StudentAccount
+    // instead — this page is Finance-officer-only.
+    public class PaymentsModel : PageModel
+    {
+        private readonly IPaymentService _paymentService;
+
+        public PaymentsModel(IPaymentService paymentService)
+        {
+            _paymentService = paymentService;
+        }
+
+        public List<PaymentRowDto> Payments { get; set; } = new();
+        public int TotalCount { get; set; }
+
+        public async Task OnGetAsync(string? search = null, int page = 1)
+        {
+            var result = await _paymentService.ListAsync(new PaymentListFilter(search, page, 20));
+            Payments = result.Items.ToList();
+            TotalCount = result.TotalCount;
+        }
+    }
 }
-
-<div class="page-heading">
-    <div>
-        <span class="eyebrow">Transactions</span>
-        <h1>Payment history</h1>
-        <p class="text-muted">Track posted payments and receipts.</p>
-    </div>
-    <button class="btn btn-dark">Download statement</button>
-</div>
-
-<div class="table-responsive surface">
-    <table class="table align-middle mb-0">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Reference</th>
-                <th>Method</th>
-                <th>Amount</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td colspan="5" class="empty-state">No payment history available.</td>
-            </tr>
-        </tbody>
-    </table>
-</div>

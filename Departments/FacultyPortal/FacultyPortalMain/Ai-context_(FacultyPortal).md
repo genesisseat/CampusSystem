@@ -4,6 +4,8 @@
 
 FacultyPortal owns the faculty-facing academic workflow interfaces in this project. Keep changes local to `FacultyPortalMain` unless a shared contract or platform change is required.
 
+FacultyPortal is not a standalone system. It must connect to the **Registrar** and **Student** systems. Both connections go through approved contracts only (see `System integration`).
+
 ## How to edit this project
 
 Use the task type to decide the correct layer:
@@ -30,10 +32,11 @@ Update this context whenever any of the following changes:
 When the project structure changes, revise these sections in order:
 
 1. `Ownership` — confirm which team and application area owns the feature
-2. `How to edit this project` — confirm whether the work is UI-only or backend
-3. `Department UI` — add or remove page names and responsibilities
-4. `Files to edit for UI changes` and `What not to add while editing the interface` — keep them aligned with the current files
-5. `Change Rules` — add any new auth, validation, or contract requirements
+2. `System integration` — keep the Registrar and Student connections and their status current
+3. `How to edit this project` — confirm whether the work is UI-only or backend
+4. `Department UI` — add or remove page names and responsibilities
+5. `Files to edit for UI changes` and `What not to add while editing the interface` — keep them aligned with the current files
+6. `Change Rules` — add any new auth, validation, or contract requirements
 
 ### AI session rule
 
@@ -82,14 +85,48 @@ The following Razor Pages are UI-only presentation placeholders with no database
 - `/Roster`: class roster student table
 - `/Gradebook`: assignment-by-student grade grid
 - `/Attendance`: class and session attendance sheet
-- `/Feedback`: assignment feedback and comment panel
 - `/Schedule`: faculty schedule/calendar view
+- `/Assignments`: assignment list and create form (title, instructions, section, type, due date, max score, allowed file types, size/count limits, late rule, optional instructions file)
+- `/AssignmentDetail`: one assignment's submissions table, submitted-file list, score, feedback and release-grade controls
 
-The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`. Keep empty states and placeholder controls until the owning team defines the backend contract.
+There is no standalone Feedback page or sidebar tab. Teachers write feedback on each student's submission inside `/AssignmentDetail`. Do not add a Feedback page back.
+
+The pages use the Student-style portal layout (sidebar, top bar, `portal-*` classes, NU blue and gold) defined in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`, not Bootstrap. Assignments-specific helpers (`form-span`, `check-item`, `dropzone`, `file-list`, `card-footer-actions`) are at the end of `site.css`. Keep empty states and placeholder controls until the owning team defines the backend contract.
+
+## System integration
+
+FacultyPortal must connect to the Registrar and Student systems. None of these connections exist yet; the current pages are UI-only.
+
+| Direction | What moves |
+|---|---|
+| Registrar to Faculty | Sections assigned to the teacher, enrollment (class rosters), schedule |
+| Student to Faculty | Assignment submissions (including files), student IDs |
+| Faculty to Student | Assignments and due dates, grades, feedback, attendance, announcements |
+| Faculty to Registrar | Final grades and attendance |
+
+Rules for these connections:
+
+- Each connection needs a contract approved by the owning team before any code is written. No direct calls into Registrar or Student controllers, services or endpoints.
+- Registrar and Student data is read-only in Faculty. Faculty writes only to its own tables in `FacultyPortalDbContext`.
+- Faculty owns `Assignments`, `Grades` and `Feedback`; Student reads them through the contract. Students only see grades after the teacher releases them.
+- A teacher must be linked to a section by ID (the Registrar `class_offerings` table currently has only `instructor_name` text).
+- Affected pages: `/Roster` and `/Schedule` (Registrar), `/Assignments`, `/AssignmentDetail`, `/Gradebook` (Student and Registrar), `/Attendance` (Registrar).
+- Open item: Faculty currently references SQL Server EF Core while the Student portal uses MySQL. Confirm which engine the shared connector resolves before building.
+
+## Planned backend (not approved yet)
+
+The Assignments pages are UI-only with demo data. When the backend starts, it needs an approved contract with Student and Registrar first. Planned shape:
+
+- Faculty owns `Assignments`, `AssignmentAttachments`, `Submissions` review data, `SubmissionFiles`, `Grades` (with released flag and graded-by) and `Feedback`, in `FacultyPortalDbContext`.
+- Student's current `student_assignments` table is a per-student placeholder (no section link, no files, no feedback) and must be replaced by the contract.
+- Files are stored outside `wwwroot` under random names, validated by content, served through an authorised endpoint.
+- Open items: which database engine the shared connector uses (Faculty currently references SQL Server EF Core, Student uses MySQL), how a teacher is linked to a section, and where files are stored.
 
 ## Change Rules
 
 - Do not add persistence or service calls to these pages without an approved contract.
+- Any Registrar or Student connection must follow the contract in `System integration`.
 - Preserve existing Razor Pages behavior and department namespace.
 - Add validation and authorization before enabling grade, attendance, feedback, roster, or schedule actions.
 - Run `dotnet build FacultyPortalMain.csproj` after UI changes.
+- Assignments buttons and fields stay cosmetic (no `<form>`, no posts) until the contract is approved.

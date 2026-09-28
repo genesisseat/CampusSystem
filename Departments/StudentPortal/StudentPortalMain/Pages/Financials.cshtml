@@ -17,12 +17,18 @@
             Statement of Account, fee assessment breakdown, and official payment receipts.
         </p>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;" class="no-print">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" class="no-print">
         <button type="button" onclick="document.getElementById('payModal').style.display='flex'" class="btn-nu btn-nu-gold">
-            💳 Pay Tuition Online
+            💳 Pay Online Now
         </button>
+        <a href="http://localhost:5124/OAO" class="btn-nu btn-nu-outline" target="_blank" title="Official Assessment Order with National University letterhead">
+            🖨️ View Official OAO
+        </a>
+        <a href="http://localhost:5124/StudentAccount" class="btn-nu btn-nu-outline" target="_blank">
+            🏦 Finance Portal
+        </a>
         <button type="button" onclick="window.print()" class="btn-nu btn-nu-outline btn-print">
-            🖨️ Print Statement of Account
+            Print SOA
         </button>
     </div>
 </div>
@@ -30,7 +36,7 @@
 <!-- Financial Summary Cards -->
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-label">Total Assessment (AY 2025-2026)</div>
+        <div class="stat-label">Total Assessment (AY 2026-2027)</div>
         <div class="stat-value">₱@Model.TotalAssessment.ToString("N2")</div>
         <div class="stat-subtext">Tuition, laboratory &amp; misc fees</div>
     </div>

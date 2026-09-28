@@ -41,6 +41,15 @@
     <div class="dash-stat-value" style="font-size:18px;color:var(--success);">Connected &amp; Active</div>
     <div class="dash-stat-sub">At-Risk Alerts &middot; Good Moral Clearance</div>
   </div>
+
+  <div class="dash-stat-card">
+    <div class="dash-stat-top">
+      <div class="dash-stat-label">Finance &amp; Accounting</div>
+      <div class="dash-stat-icon">💳</div>
+    </div>
+    <div class="dash-stat-value" style="font-size:18px;color:var(--success);">Connected &amp; Active</div>
+    <div class="dash-stat-sub">Tuition Assessment &middot; Clearance &middot; Port 5124</div>
+  </div>
 </div>
 
 <!-- Live Interactive API Test Console -->
@@ -59,6 +68,7 @@
         <option value="student">Student Portal API (/api/student)</option>
         <option value="faculty">Faculty Portal API (/api/faculty)</option>
         <option value="guidance">Guidance &amp; Counseling API (/api/guidance)</option>
+        <option value="finance">Finance Department API (/api/finance)</option>
       </select>
     </div>
 
@@ -170,6 +180,11 @@ foreach (var student in data.Data) {
       { value: 'at_risk_students', text: 'at_risk_students (Probation / Failed)' },
       { value: 'student_status', text: 'student_status (Academic audit)' },
       { value: 'verify_good_moral', text: 'verify_good_moral (Clearance check)' }
+    ],
+    finance: [
+      { value: 'assessment_status', text: 'assessment_status (Tuition assessment check)' },
+      { value: 'clearance_verification', text: 'clearance_verification (Finance clearance sign-off)' },
+      { value: 'payments_summary', text: 'payments_summary (Student payment log)' }
     ]
   };
 
@@ -191,7 +206,7 @@ foreach (var student in data.Data) {
     const act = document.getElementById('apiActionSelect').value;
     const param = document.getElementById('apiParamInput').value;
     let url = `/api/${sys}?action=${act}`;
-    if (sys === 'student' || act === 'student_status' || act === 'verify_good_moral') {
+    if (sys === 'student' || act === 'student_status' || act === 'verify_good_moral' || sys === 'finance') {
       url += `&student_id=${encodeURIComponent(param)}`;
     } else if (act === 'class_roster') {
       url += `&class_offering_id=${encodeURIComponent(param)}`;
