@@ -1,12 +1,12 @@
 # Faculty Portal Database Tables
 
-This reference separates the Faculty Portal's shared MySQL tables from its SQL Server guidance/authentication persistence. The table and column descriptions are based on queries and EF Core mappings in the current project; MySQL column types are only stated where code establishes them.
+This reference documents the shared MySQL tables queried and updated by the Faculty Portal.
 
 ## Database connections
 
-- MySQL `DefaultConnection`: host `100.98.41.69`, port `3306`, database `mydb`.
-- SQL Server `CampusSystemDb`: `localhost,1433`, database `CampusSystemDb`.
-- Faculty roster, class and grade operations use MySQL. Guidance requests and refresh tokens use SQL Server.
+- Connection name: `DefaultConnection`, targeting shared MySQL database `mydb`.
+- Provide `ConnectionStrings__DefaultConnection` through the environment or a secret manager; do not commit credentials.
+- Student references use integer `user.id`.
 
 ## Shared MySQL tables used by Faculty Portal
 
@@ -85,40 +85,6 @@ This reference separates the Faculty Portal's shared MySQL tables from its SQL S
 | status | Clearance state |
 | id | Used to choose the most recent row |
 
-## SQL Server shared persistence tables
-
-### `dbo.Students`
-
-| Column | SQL Server type | Notes |
-|---|---|---|
-| Id | uniqueidentifier | Primary key |
-| StudentNumber | nvarchar(max) | Shared student number |
-| FullName | nvarchar(max) | Student name |
-| Email | nvarchar(max) | Email address |
-
-### `guidance.GuidanceRequests`
-
-| Column | SQL Server type | Notes |
-|---|---|---|
-| Id | uniqueidentifier | Primary key |
-| StudentId | uniqueidentifier | Student reference |
-| Subject | nvarchar(max) | Request subject |
-| Details | nvarchar(max) | Request details |
-| SafetyValveText | nvarchar(max), nullable | Optional safety text |
-| Urgency | int | Enum value |
-| Status | int | Enum value |
-| AssignedCounselorId | uniqueidentifier, nullable | Optional counselor |
-| IdempotencyKey | nvarchar(max), nullable | Duplicate-submission key |
-| RowVersion | varbinary(max) | Concurrency value |
-
-### `guidance.RefreshTokens`
-
-| Column | SQL Server type | Notes |
-|---|---|---|
-| Token | nvarchar(450) | Primary key |
-| Subject | nvarchar(max) | Token subject |
-| ExpiresAt | datetimeoffset | Expiration time |
-
 ## Relationships
 
 - `class_offerings.subject_id` -> `subjects.id`
@@ -126,10 +92,9 @@ This reference separates the Faculty Portal's shared MySQL tables from its SQL S
 - `enrolled_subjects.class_offering_id` -> `class_offerings.id`
 - `grades.enrolled_subject_id` -> `enrolled_subjects.id`
 - `student_profile.user_id` and `enrollments.student_id` refer to the MySQL `user` table.
-- `guidance.GuidanceRequests.StudentId` corresponds to the shared student identity; no EF foreign key is configured.
 
 ## Notes
 
-- The MySQL tables are shared with Student Portal, Finance, and Registrar workflows; they are not unique Faculty-owned tables.
+- These MySQL tables are shared with Student Portal, Finance, and Registrar workflows; they are not unique Faculty-owned tables.
 - MySQL table definitions are not declared in this project. The columns above are those read or written by `FacultyDbService`, not a complete schema dump.
-- SQL Server entity mappings are in `Data/GuidanceDbContext.cs`.
+- `FacultyDbService` reads rosters and offerings and writes grades; assignment and attendance workflows remain incomplete.

@@ -1,40 +1,64 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Dapper;
+using MySqlConnector;
 using RegistrarMain.Contracts;
-using RegistrarMain.Data;
-using RegistrarMain.Models;
 
 namespace RegistrarMain.Controllers;
 
+[ApiController]
 [Route("api/courses")]
-public sealed class CoursesController(RegistrarDbContext db) : RegistrarControllerBase(db)
+public sealed class CoursesController(MySqlConnection db) : ControllerBase
 {
     [HttpGet]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<CourseDto>>> List([FromQuery] string? search, CancellationToken cancellationToken)
     {
-        var query = Db.Courses.AsNoTracking();
+        var query = @"
+            SELECT s.id AS Id,
+                   s.subject_code AS Code,
+                   s.subject_name AS Title,
+                   s.units AS Credits,
+                   co.id AS OfferingId,
+                   co.section_code AS SectionCode,
+                   co.semester AS Semester,
+                   co.school_year AS SchoolYear
+            FROM subjects s
+            JOIN class_offerings co ON co.subject_id = s.id
+            WHERE co.status = 'open'";
+
+        var parameters = new DynamicParameters();
         if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = search.Trim();
-            query = query.Where(course => course.Code.Contains(term) || course.Title.Contains(term));
+            query += " AND (s.subject_code LIKE @pattern OR s.subject_name LIKE @pattern)";
+            parameters.Add("pattern", $"%{search.Trim()}%");
         }
 
-        var courses = await query.OrderBy(course => course.Code)
-            .Select(course => new CourseDto(course.Id, course.Code, course.Title, course.Credits))
-            .ToListAsync(cancellationToken);
-        return Ok(courses);
+        query += " ORDER BY s.subject_code, co.school_year, co.semester, co.section_code";
+        var courses = await db.QueryAsync<CourseDto>(new CommandDefinition(query, parameters, cancellationToken: cancellationToken));
+        return Ok(courses.AsList());
     }
 
     [HttpGet("{id:int}")]
     [Authorize]
     public async Task<ActionResult<CourseDto>> Get(int id, CancellationToken cancellationToken)
     {
-        var course = await Db.Courses.AsNoTracking()
-            .Where(item => item.Id == id)
-            .Select(item => new CourseDto(item.Id, item.Code, item.Title, item.Credits))
-            .SingleOrDefaultAsync(cancellationToken);
+        const string query = @"
+            SELECT s.id AS Id,
+                   s.subject_code AS Code,
+                   s.subject_name AS Title,
+                   s.units AS Credits,
+                   co.id AS OfferingId,
+                   co.section_code AS SectionCode,
+                   co.semester AS Semester,
+                   co.school_year AS SchoolYear
+            FROM subjects s
+            LEFT JOIN class_offerings co ON co.subject_id = s.id AND co.status = 'open'
+            WHERE s.id = @id
+            ORDER BY co.school_year DESC, co.semester, co.section_code
+            LIMIT 1";
+        var course = await db.QuerySingleOrDefaultAsync<CourseDto>(
+            new CommandDefinition(query, new { id }, cancellationToken: cancellationToken));
         return course is null ? NotFound() : Ok(course);
     }
 
@@ -45,10 +69,27 @@ public sealed class CoursesController(RegistrarDbContext db) : RegistrarControll
         if (string.IsNullOrWhiteSpace(request.Code) || string.IsNullOrWhiteSpace(request.Title) || request.Credits <= 0)
             return BadRequest("Code, title, and positive credits are required.");
 
-        var course = new Course { Code = request.Code.Trim(), Title = request.Title.Trim(), Credits = request.Credits };
-        Db.Courses.Add(course);
-        await Db.SaveChangesAsync(cancellationToken);
-        var response = new CourseDto(course.Id, course.Code, course.Title, course.Credits);
-        return CreatedAtAction(nameof(Get), new { id = course.Id }, response);
+        const string insert = @"
+            INSERT INTO subjects
+                (subject_code, subject_name, units, lec_hours, lab_hours,
+                 prerequisite_subject_id, curriculum_program, year_level, semester)
+            VALUES
+                (@code, @title, @credits, @lectureHours, @labHours,
+                 @prerequisiteSubjectId, @program, @yearLevel, @semester);
+            SELECT LAST_INSERT_ID();";
+        var id = await db.ExecuteScalarAsync<int>(new CommandDefinition(insert, new
+        {
+            code = request.Code.Trim(),
+            title = request.Title.Trim(),
+            credits = request.Credits,
+            lectureHours = request.LectureHours,
+            labHours = request.LabHours,
+            prerequisiteSubjectId = request.PrerequisiteSubjectId,
+            program = request.Program.Trim(),
+            yearLevel = request.YearLevel.Trim(),
+            semester = request.Semester.Trim()
+        }, cancellationToken: cancellationToken));
+        var response = new CourseDto(id, request.Code.Trim(), request.Title.Trim(), request.Credits);
+        return CreatedAtAction(nameof(Get), new { id }, response);
     }
 }

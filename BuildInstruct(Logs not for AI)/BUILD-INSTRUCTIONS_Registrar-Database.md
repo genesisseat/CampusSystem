@@ -1,5 +1,7 @@
 # Build Instructions: Update AI-Context Files for the Shared Campus Database
 
+> **Archived and superseded (2026-09-29):** This document describes the retired SQL Server/CampusSystemDb architecture. Do not follow its implementation steps; use [the shared MySQL database handoff](../Departments/SHARED-MYSQL-DATABASE.md).
+
 **Trigger for this update:** `BUILD-INSTRUCTIONS_Shared-Campus-Database.md` introduced `CampusSystem.Data` as one shared database used directly by all six departments. Every AI-context file that currently says "no live cross-department data" or "no shared class library" was written before this decision existed and is now out of date. Per each file's own "Required update pattern," these edits must be made before any future session relies on the old rules.
 
 **Rule change, stated once:** Cross-department data access is now approved **only through `CampusSystemDbContext`** (the shared library). Direct calls into another department's controllers, services, or API endpoints are still **not** approved — the boundary moved from "no sharing" to "shared data store, separately owned API surfaces." This distinction must be preserved in every edit below; it is not a blanket removal of the isolation rules.

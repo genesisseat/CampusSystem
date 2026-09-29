@@ -52,7 +52,7 @@ Before making a change in a future session, read this file first and compare it 
 
 ## Interface-only editing guidance
 
-This department is a frontend-only dashboard shell. If the task is to modify the interface, keep it in the presentation layer and do not add backend behavior.
+Finance uses a service layer and shared MySQL `mydb`, but data maturity varies: assessment and ledger pages still use `FinanceDataStore` demo data, while payment/clearance services can write shared MySQL records. Keep these boundaries explicit when changing a page; do not describe the whole department as either fully mocked or fully synchronized.
 
 ### Files to edit for UI changes
 
@@ -63,11 +63,10 @@ This department is a frontend-only dashboard shell. If the task is to modify the
 
 ### What not to add while editing the interface
 
-- No invoice or payment persistence logic
-- No database writes or service-layer invocation
-- No live financial calculations tied to production data
+- Do not replace demo assessment data with live calculations unless the Finance workflow/schema contract is part of the task.
+- Do not assume a payment/clearance action is synchronized until it uses the shared MySQL service and has a verified student `user.id`.
 - No hidden API calls that would process real payment data
-- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `FinanceDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Use shared MySQL `mydb` through `ConnectionStrings:DefaultConnection`, supplied through `ConnectionStrings__DefaultConnection` or a secret manager. Shared student references use integer `user.id`; do not create Finance-local student IDs or a second database.
 - Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 ### Approved UI behavior
@@ -76,9 +75,9 @@ This department is a frontend-only dashboard shell. If the task is to modify the
 - Preserve the existing Bootstrap structure and page flow.
 - Update labels, cards, filters, and styling without introducing live workflow behavior.
 
-## Department UI
+## Department UI and persistence status
 
-The following Razor Pages are UI-only presentation placeholders with no database, service, API, or form-submit behavior:
+Finance pages call the service layer, but they are not uniformly backed by shared MySQL. `FinanceDataStore` still supplies demo assessment and ledger data. `ActivePaymentService` can write payments to `student_payments`; clearance writes use `student_clearance` and must resolve the correct shared `user.id`.
 
 - `/Billing`: billing and invoice list
 - `/Invoice`: invoice detail, line items, totals, and download placeholder
@@ -86,11 +85,11 @@ The following Razor Pages are UI-only presentation placeholders with no database
 - `/Pay`: make-a-payment form; UI only
 - `/Aid`: financial aid and scholarship status card
 
-The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`. Keep payment and download controls non-functional until approved integrations exist.
+The pages use the existing Bootstrap layout and local styles in `Pages/Shared/_Layout.cshtml` and `wwwroot/css/site.css`. Do not claim that a payment, assessment, aid, or document-fee workflow is synchronized until its service reads/writes the shared MySQL records and has been verified.
 
 ## Change Rules
 
-- Never process payment data from placeholder controls.
-- Do not add persistence or service calls without an approved contract and authorization design.
+- Do not treat `FinanceDataStore` demo assessments as live student balances.
+- Validate a student against `user.id` before any shared payment or clearance write; never fall back to a hard-coded student ID.
 - Protect financial and aid information with appropriate access checks before backend wiring.
 - Run `dotnet build FinanceMain.csproj` after UI changes.

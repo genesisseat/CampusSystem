@@ -10,8 +10,8 @@ public class FacultyDbService
 
     public FacultyDbService(IConfiguration config, ILogger<FacultyDbService> logger)
     {
-        _connectionString = config.GetConnectionString("DefaultConnection") 
-            ?? "Server=100.98.41.69;Port=3306;Database=mydb;Uid=myuser;Pwd=strongpassword;";
+        _connectionString = config.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
         _logger = logger;
     }
 

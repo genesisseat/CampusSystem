@@ -56,19 +56,19 @@ If scripts are blocked by execution policy, run the command with `-ExecutionPoli
 
 Faculty module of CampusSystem. It must integrate with the Student and Registrar systems.
 
-**Current status:** the Faculty portal is UI-only with demo data. It has no backend or database of its own yet, and it is not connected to the Registrar or Student systems. The data-flow table below is the planned integration, and each connection needs a contract approved by the owning team first.
+**Current status:** Roster, Gradebook, and Schedule already query shared MySQL `mydb`; Gradebook writes through `FacultyDbService`. Assignment submissions, attendance, feedback, and authenticated instructor-to-offering mapping remain incomplete.
 
 ### Data flow
 
 | Direction | What moves | Status |
 |---|---|---|
-| Registrar to Faculty | Sections assigned to the teacher, enrollment (class rosters), schedule | In diagram |
+| Shared MySQL to Faculty | Offerings, enrollments, roster, schedule, Finance clearance | Active MySQL queries |
 | Student to Faculty | Assignment submissions, student IDs | In diagram |
-| Faculty to Student | Grades, feedback, attendance, announcements | In diagram |
-| Faculty to Registrar | Final grades and attendance | Not in diagram, needs adding |
+| Faculty to Student | Grades | Grade table is shared; release/authorization workflow remains incomplete |
+| Faculty to Registrar | Final grades | Grades are stored in shared MySQL; broader workflow remains incomplete |
 | Faculty and Payroll | Teaching load and employment type out, payslips (read-only) in | Not in diagram, needs deciding |
 
-Faculty owns: `Faculty`, `Teacher`, `Authentication`, `Assignments`, `Grades`, `Feedback`, `Attendance_Sessions`, `Attendance_Record`, `Announcement`. Registrar and Student data is read-only in Faculty. Ownership is an assumption to confirm. `Feedback` stays a data table tied to a submission, but has no page of its own.
+Faculty feature ownership (teacher identity, assignments, attendance, and feedback storage) still needs confirmation. Faculty reads shared operational student/offering data and currently writes grades to shared MySQL; avoid copying Registrar/Student records into a new context. `Feedback` stays tied to a submission, but has no page of its own.
 
 ### Design
 
@@ -81,7 +81,7 @@ Faculty owns: `Faculty`, `Teacher`, `Authentication`, `Assignments`, `Grades`, `
 
 ### Front end
 
-FacultyPortal is an ASP.NET Core Razor Pages project. The interface is UI-only until a backend contract is approved: no database, service, API, or form-submit behavior.
+FacultyPortal is an ASP.NET Core Razor Pages project. Roster, Gradebook, and Schedule use `FacultyDbService` against shared MySQL `mydb`; assignment and attendance workflows remain placeholders pending their contracts.
 
 - [x] Standalone HTML prototype (`faculty-portal.html`) used to plan the screens
 - [x] Faculty layout, `site.css` and pages rebuilt on the Student portal theme (sidebar, top bar, `portal-*` classes, NU blue and gold)
@@ -98,9 +98,9 @@ FacultyPortal is an ASP.NET Core Razor Pages project. The interface is UI-only u
 Only start once the owning teams approve a contract.
 
 - [ ] Get approved Student and Registrar contracts (rosters, schedule, submissions). No direct calls into other departments' controllers, services or endpoints until then.
-- [ ] Create `FacultyPortalDbContext`, models and migrations inside this project. Do not add `DbSet`s to `CampusSystem.Data` or another department's context.
+- [ ] Define shared-MySQL-compatible storage/contracts for assignments and submissions only after Student/Registrar review; do not create `FacultyPortalDbContext` or duplicate shared academic tables.
 - [ ] Assignments backend: contract with Student for assignments, multi-file submissions, grades and feedback (replaces the per-student `student_assignments` placeholder), then file storage and upload validation
-- [ ] Confirm the database engine (Faculty references SQL Server EF Core, Student uses MySQL) and link teachers to sections by ID
+- [x] Faculty roster, schedule, and gradebook use shared MySQL `mydb`; the instructor-to-offering relationship still needs an authenticated ID contract
 - [ ] Add validation and authorization before enabling grade, attendance, feedback, roster or schedule actions
 - [ ] Replace demo content with real data, one page at a time
 - [ ] Health check ends with `HEALTHY`

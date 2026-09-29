@@ -1,80 +1,41 @@
 # Registrar Department Database Tables
 
-This document summarizes the database tables used by the Registrar department application, based on the EF Core models in the Registrar project.
+This document summarizes the shared MySQL tables used by Registrar's pages and API.
 
-## 1) Registrar schema tables
+## Connection
 
-### `registrar.Courses`
+- Connection name: `DefaultConnection`
+- Database: shared `mydb`
+- Student identity: integer `user.id`
 
-| Column | Type | Notes |
+## Shared tables used by Registrar
+
+### `subjects` and `class_offerings`
+
+| Table | Important columns |
 |---|---|---|
-| Id | int | Primary key |
-| Code | nvarchar | Course code, e.g. `CS101` |
-| Title | nvarchar | Course title |
-| Credits | int | Credit value |
+| `subjects` | `id`, `subject_code`, `subject_name`, `units`, curriculum metadata |
+| `class_offerings` | `id`, `subject_id`, `section_code`, `school_year`, `semester`, `capacity`, `slots_taken`, `status` |
 
-### `registrar.Enrollments`
+The course API lists open offerings. Registration submits an offering ID, not a subject ID or client-supplied semester.
 
-| Column | Type | Notes |
-|---|---|---|
-| Id | int | Primary key |
-| StudentId | uniqueidentifier | FK to `dbo.Students.Id` |
-| CourseId | int | Course reference |
-| Semester | nvarchar | Registration term |
-| RowVersion | rowversion | Concurrency token |
+### `enrollments` and `enrolled_subjects`
 
-### `registrar.TranscriptEntries`
+`enrollments.student_id` references shared `user.id`; `enrolled_subjects` links an enrollment to a `class_offerings` row. Seat counts are adjusted in the same transaction as add/drop operations.
 
-| Column | Type | Notes |
-|---|---|---|
-| Id | int | Primary key |
-| StudentId | uniqueidentifier | FK to `dbo.Students.Id` |
-| Semester | nvarchar | Term for the grade |
-| CourseId | int | Course reference |
-| Grade | nvarchar | Final grade value |
+### `grades`
 
-### `registrar.VerificationRequests`
+Transcript rows join `grades` through `enrolled_subjects`, `enrollments`, `class_offerings`, and `subjects`.
 
-| Column | Type | Notes |
-|---|---|---|
-| Id | int | Primary key |
-| StudentId | uniqueidentifier | FK to `dbo.Students.Id` |
-| Status | nvarchar | Default: `Pending` |
-| RequestedAt | datetime | Request timestamp |
+### `document_requests`
 
-### `registrar.RecordsRequests`
+Records requests and enrollment verification requests are both stored in this shared table. Registrar verifies or creates its schema at startup; verification requests use `document_type = 'Enrollment Verification'`.
 
-| Column | Type | Notes |
-|---|---|---|
-| Id | int | Primary key |
-| StudentId | uniqueidentifier | FK to `dbo.Students.Id` |
-| DocumentType | nvarchar | Request type |
-| Status | nvarchar | Default: `Pending` |
-| RequestedAt | datetime | Request timestamp |
+## Legacy source files
 
-## 2) Shared student table
+The old `RegistrarDbContext`, SQL Server migrations, and `registrar.*` models remain in the repository but are no longer registered or used at runtime. Do not apply those migrations or use them for new features.
 
-### `dbo.Students`
+## Notes
 
-| Column | Type | Notes |
-|---|---|---|
-| Id | uniqueidentifier | Primary key |
-| StudentNumber | nvarchar | Student identifier number |
-| FullName | nvarchar | Full student name |
-| Email | nvarchar | Email address |
-
-## 3) Relationship summary
-
-- `registrar.Enrollments.StudentId` -> `dbo.Students.Id`
-- `registrar.TranscriptEntries.StudentId` -> `dbo.Students.Id`
-- `registrar.VerificationRequests.StudentId` -> `dbo.Students.Id`
-- `registrar.RecordsRequests.StudentId` -> `dbo.Students.Id`
-- `registrar.Enrollments.CourseId` -> `registrar.Courses.Id`
-
-## 4) Notes
-
-- The registrar context is defined in `RegistrarDbContext`.
-- The `Students` table is mapped from the shared `CampusSystem.Data.Models.Student` model and is stored in the `dbo` schema.
-- Registrar-specific tables are mapped in the `registrar` schema.
-
-This file reflects the current EF Core model definitions in the project and is intended as a quick database reference for the registrar department.
+- Registrar bootstraps only `document_requests` with `CREATE TABLE IF NOT EXISTS`; it does not create or alter student, course, enrollment, offering, or grade tables.
+- Student-owned API requests resolve the authenticated `StudentId` claim to `user.id` or `user.student_id_number`.

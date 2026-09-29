@@ -1,20 +1,13 @@
-using CampusSystem.Sql;
 using FluentValidation;
 using RegistrarMain.HealthAndRepair;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.EntityFrameworkCore;
 using RegistrarMain.Contracts;
-using RegistrarMain.Data;
 using RegistrarMain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContext<RegistrarDbContext>(options =>
-    options.UseSqlServer(campusConnection,
-        sql => sql.MigrationsHistoryTable("__EFMigrationsHistory_Registrar", "registrar")));
+var mysqlConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
 
 // Add services to the container.
 // Guidance services
@@ -26,10 +19,8 @@ if (builder.Environment.IsDevelopment())
 }
 builder.Services.AddAuthorization();
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
-builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
-    options.UseSqlServer(campusConnection));
-builder.Services.AddScoped<IGuidanceRequestStore, SqlGuidanceRequestStore>();
-builder.Services.AddScoped<IRefreshTokenStore, SqlRefreshTokenStore>();
+builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
+builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentRequestService, StudentRequestService>();
@@ -50,12 +41,18 @@ builder.Services.AddSession(options =>
 });
 builder.Services.AddScoped<DatabaseService>();
 builder.Services.AddScoped<SettingsService>();
+builder.Services.AddScoped<RegistrarApiSchemaService>();
 builder.Services.AddTransient<MySqlConnector.MySqlConnection>(_ =>
-    new MySqlConnector.MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+    new MySqlConnector.MySqlConnection(mysqlConnectionString));
 
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<RegistrarApiSchemaService>().EnsureSchemaAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

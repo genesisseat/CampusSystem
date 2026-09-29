@@ -48,5 +48,5 @@ This reference describes Guidance's MySQL tables and its reads from the shared c
 
 ## Notes
 
-- Schema creation is best-effort at startup; database errors are logged and the app continues running.
+- Schema creation runs at startup; database errors are logged and rethrown so the app does not start as if persistence were available.
 - Student identifiers in shared workflows use integer `user.id`, not a department-local GUID.

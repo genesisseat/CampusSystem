@@ -28,8 +28,8 @@
 	});
 
 	const courseCard = course => `<article class="course-card">
-		<div><span class="course-code">${escapeHtml(course.code)}</span><h2>${escapeHtml(course.title)}</h2><span class="course-meta">${course.credits} credit${course.credits === 1 ? '' : 's'}</span></div>
-		<button class="btn btn-outline-primary" type="button" data-enroll-course="${course.id}">Add to schedule</button>
+		<div><span class="course-code">${escapeHtml(course.code)}</span><h2>${escapeHtml(course.title)}</h2><span class="course-meta">${course.credits} credit${course.credits === 1 ? '' : 's'} | ${escapeHtml(course.sectionCode)} | ${escapeHtml(course.schoolYear)} ${escapeHtml(course.semester)}</span></div>
+		<button class="btn btn-outline-primary" type="button" data-enroll-offering="${course.offeringId}">Add to schedule</button>
 	</article>`;
 
 	const loadCourses = async (target, search = '') => {
@@ -77,17 +77,17 @@
 		const refresh = async () => {
 			const [courses, enrollments] = await Promise.all([api('/api/courses'), api('/api/registrations/mine')]);
 			page.querySelector('#registration-course-count').textContent = `${courses.length} available`;
-			coursesTarget.innerHTML = courses.length ? courses.map(course => `<div class="schedule-item"><span><strong>${escapeHtml(course.code)}</strong><small>${escapeHtml(course.title)} - ${course.credits} credits</small></span><button class="btn btn-sm btn-outline-primary" data-enroll-course="${course.id}">Add</button></div>`).join('') : '<div class="empty-state">No courses are available.</div>';
+			coursesTarget.innerHTML = courses.length ? courses.map(course => `<div class="schedule-item"><span><strong>${escapeHtml(course.code)} | ${escapeHtml(course.sectionCode)}</strong><small>${escapeHtml(course.title)} - ${course.credits} credits</small></span><button class="btn btn-sm btn-outline-primary" data-enroll-offering="${course.offeringId}">Add</button></div>`).join('') : '<div class="empty-state">No courses are available.</div>';
 			scheduleTarget.innerHTML = enrollments.length ? enrollments.map(item => `<div class="schedule-item"><span><strong>${escapeHtml(item.courseCode)}</strong><small>${escapeHtml(item.semester)}</small></span><button class="btn btn-sm btn-outline-danger" data-drop-id="${item.id}" data-row-version="${escapeHtml(item.rowVersion)}">Drop</button></div>`).join('') : '<div class="empty-state">Your schedule is clear. Add a course to begin.</div>';
 			total.textContent = `${enrollments.length} course${enrollments.length === 1 ? '' : 's'}`;
 			setApiStatus(true);
 		};
 		page.addEventListener('click', async event => {
-			const add = event.target.closest('[data-enroll-course]');
+			const add = event.target.closest('[data-enroll-offering]');
 			const drop = event.target.closest('[data-drop-id]');
 			try {
-				if (add) { add.disabled = true; clearMessage('error'); clearMessage('success'); await api('/api/registrations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId: Number(add.dataset.enrollCourse), semester: '2026-Fall' }) }); showMessage('success', 'Course added to your 2026 Fall schedule.'); await refresh(); }
-				if (drop) { drop.disabled = true; clearMessage('error'); await api(`/api/registrations/${drop.dataset.dropId}?rowVersion=${encodeURIComponent(drop.dataset.rowVersion)}`, { method: 'DELETE' }); showMessage('success', 'Course dropped from your schedule.'); await refresh(); }
+				if (add) { add.disabled = true; clearMessage('error'); clearMessage('success'); await api('/api/registrations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ offeringId: Number(add.dataset.enrollOffering) }) }); showMessage('success', 'Course added to your schedule.'); await refresh(); }
+				if (drop) { drop.disabled = true; clearMessage('error'); await api(`/api/registrations/${drop.dataset.dropId}`, { method: 'DELETE' }); showMessage('success', 'Course dropped from your schedule.'); await refresh(); }
 			} catch (error) { showMessage('error', error.message); if (add) add.disabled = false; if (drop) drop.disabled = false; }
 		});
 		try { await refresh(); } catch (error) { setApiStatus(false); showMessage('error', error.message); }

@@ -1,9 +1,26 @@
 namespace RegistrarMain.Contracts;
 
-public record CourseDto(int Id, string Code, string Title, int Credits);
-public record CreateCourseRequest(string Code, string Title, int Credits);
-public record EnrollmentRequestDto(int CourseId, string Semester);
-public record EnrollmentDto(int Id, int CourseId, string CourseCode, string Semester, string RowVersion);
+public record CourseDto(
+	int Id,
+	string Code,
+	string Title,
+	decimal Credits,
+	int? OfferingId = null,
+	string? SectionCode = null,
+	string? Semester = null,
+	string? SchoolYear = null);
+public record CreateCourseRequest(
+	string Code,
+	string Title,
+	int Credits,
+	string Program = "General",
+	string YearLevel = "1st Year",
+	string Semester = "1st Semester",
+	int LectureHours = 0,
+	int LabHours = 0,
+	int? PrerequisiteSubjectId = null);
+public record EnrollmentRequestDto(int OfferingId);
+public record EnrollmentDto(int Id, int CourseId, string CourseCode, string Semester);
 public record TranscriptEntryDto(string CourseCode, string Grade);
 public record TranscriptSemesterDto(string Semester, IReadOnlyList<TranscriptEntryDto> Entries);
 public record TranscriptDto(IReadOnlyList<TranscriptSemesterDto> Semesters);

@@ -4,7 +4,7 @@
 
 FacultyPortal owns the faculty-facing academic workflow interfaces in this project. Keep changes local to `FacultyPortalMain` unless a shared contract or platform change is required.
 
-FacultyPortal is not a standalone system. It must connect to the **Registrar** and **Student** systems. Both connections go through approved contracts only (see `System integration`).
+FacultyPortal is not a standalone system. Its roster, schedule, and gradebook queries use the shared MySQL database `mydb`; direct interdepartment API calls still require approved contracts.
 
 ## How to edit this project
 
@@ -12,7 +12,7 @@ Use the task type to decide the correct layer:
 
 - Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Keep the output visual-only and non-functional unless a verified data contract exists.
 - Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, models, DTOs, `Program.cs`, and other server-side files only when the task explicitly requires real integration or business logic.
-- AI model rule: if the request does not clearly ask for backend logic, assume it is an interface edit and do not add persistence, API calls, or database access.
+- AI model rule: preserve the existing MySQL-backed roster, schedule, and gradebook paths. For UI-only work, do not add persistence to the remaining placeholder workflows.
 ## AI maintenance manual
 
 This file is the project guide for future AI sessions and developer handoffs. It should stay current as the project changes.
@@ -53,7 +53,7 @@ Before making a change in a future session, read this file first and compare it 
 - `Models/` = domain objects and data contracts
 ## Interface-only editing guidance
 
-The interface in this project is intentionally frontend-only. When modifying the faculty UI, edit only the presentation layer and keep backend integration out of scope unless an approved contract exists.
+Some Faculty pages are already database-backed. `/Roster`, `/Gradebook`, and `/Schedule` use `FacultyDbService`; assignments, attendance, and related controls remain placeholders unless an approved contract is added.
 
 ### Files to edit for UI changes
 
@@ -64,12 +64,11 @@ The interface in this project is intentionally frontend-only. When modifying the
 
 ### What not to add while editing the interface
 
-- No database access or EF Core calls
-- No controller logic that persists or queries data
-- No service calls that change live records
+- Do not replace the current Dapper/MySQL service with EF Core or a department-local database.
+- Do not add live writes to assignment, attendance, or feedback placeholders without an approved contract.
 - No auth or role enforcement logic that is not already in the app shell
 - No form submissions that are not explicitly approved as UI-only placeholders
-- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `FacultyPortalDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Use shared MySQL `mydb` through `ConnectionStrings:DefaultConnection`, supplied through `ConnectionStrings__DefaultConnection` or a secret manager. Student references use integer `user.id`.
 - Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 ### Approved UI behavior
@@ -80,7 +79,7 @@ The interface in this project is intentionally frontend-only. When modifying the
 
 ## Department UI
 
-The following Razor Pages are UI-only presentation placeholders with no database, service, API, or form-submit behavior:
+The following Razor Pages use or present Faculty workflows; roster, gradebook, and schedule data is queried from shared MySQL while remaining controls are placeholders:
 
 - `/Roster`: class roster student table
 - `/Gradebook`: assignment-by-student grade grid
@@ -95,7 +94,7 @@ The pages use the Student-style portal layout (sidebar, top bar, `portal-*` clas
 
 ## System integration
 
-FacultyPortal must connect to the Registrar and Student systems. None of these connections exist yet; the current pages are UI-only.
+FacultyPortal reads shared course, enrollment, student, grade, and Finance-clearance records from MySQL. It does not currently call Registrar or Student Portal APIs.
 
 | Direction | What moves |
 |---|---|
@@ -106,21 +105,21 @@ FacultyPortal must connect to the Registrar and Student systems. None of these c
 
 Rules for these connections:
 
-- Each connection needs a contract approved by the owning team before any code is written. No direct calls into Registrar or Student controllers, services or endpoints.
-- Registrar and Student data is read-only in Faculty. Faculty writes only to its own tables in `FacultyPortalDbContext`.
+- Continue reading shared course, enrollment, student, and clearance data from the operational tables; do not duplicate these records in a Faculty database.
+- Grade writes currently update the shared `grades` table. Validate schema or workflow changes against Student Portal and Registrar consumers.
 - Faculty owns `Assignments`, `Grades` and `Feedback`; Student reads them through the contract. Students only see grades after the teacher releases them.
 - A teacher must be linked to a section by ID (the Registrar `class_offerings` table currently has only `instructor_name` text).
 - Affected pages: `/Roster` and `/Schedule` (Registrar), `/Assignments`, `/AssignmentDetail`, `/Gradebook` (Student and Registrar), `/Attendance` (Registrar).
-- Open item: Faculty currently references SQL Server EF Core while the Student portal uses MySQL. Confirm which engine the shared connector resolves before building.
+- Open item: instructors are represented by `instructor_name` text on `class_offerings`; an authenticated faculty-to-offering ID relationship is still needed.
 
 ## Planned backend (not approved yet)
 
 The Assignments pages are UI-only with demo data. When the backend starts, it needs an approved contract with Student and Registrar first. Planned shape:
 
-- Faculty owns `Assignments`, `AssignmentAttachments`, `Submissions` review data, `SubmissionFiles`, `Grades` (with released flag and graded-by) and `Feedback`, in `FacultyPortalDbContext`.
+- Faculty's future assignments/submissions/feedback feature still needs an approved contract and storage design; do not create a Faculty-only database or duplicate shared student/grade records.
 - Student's current `student_assignments` table is a per-student placeholder (no section link, no files, no feedback) and must be replaced by the contract.
 - Files are stored outside `wwwroot` under random names, validated by content, served through an authorised endpoint.
-- Open items: which database engine the shared connector uses (Faculty currently references SQL Server EF Core, Student uses MySQL), how a teacher is linked to a section, and where files are stored.
+- Open items: how a teacher is linked to a section, and where assignment/submission files are stored.
 
 ## Change Rules
 

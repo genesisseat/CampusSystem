@@ -1,13 +1,4 @@
-using CampusSystem.Sql;
-using Microsoft.EntityFrameworkCore;
-
 var builder = WebApplication.CreateBuilder(args);
-
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContextFactory<DbContext>(options =>
-    options.UseSqlServer(campusConnection));
 
 builder.Services.AddRazorPages();
 

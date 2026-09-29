@@ -1,16 +1,16 @@
 # Finance Department Project Documentation
 
 **Scope:** `Departments/Finance/FinanceMain` only  
-**Reviewed:** 2026-09-19  
+**Reviewed:** 2026-09-29
 **Application:** ASP.NET Core Razor Pages, target framework `net10.0`
 
 This document is the programmer handoff and maintenance guide for the Finance department. Paths are relative to the repository root unless marked as an absolute location. Keep Finance changes inside this department unless a shared contract or platform change has been approved.
 
 ## Current state
 
-The Finance application is currently a presentation shell for billing, invoices, payments, and financial aid. The visible finance actions do not load financial data, submit forms, download files, or process payments.
+Finance pages call assessment, payment, clearance, and request services. `FinanceDataStore` still supplies demo assessment and ledger state; payment and clearance services can write to shared MySQL `mydb`. The department is therefore partly integrated, not fully synchronized.
 
-The server-side files currently registered in `Program.cs` implement a separate student-request/counselor workflow. They are not connected to the finance Razor Pages and should not be described as billing or payment functionality. Treat this as an implementation mismatch to resolve before adding production finance behavior.
+The app also retains copied student-request/counselor scaffolding that is separate from its finance workflows. Do not treat those in-memory stores as Finance persistence.
 
 ## Project map
 
@@ -53,7 +53,8 @@ The server-side files currently registered in `Program.cs` implement a separate 
 ### UI rules
 
 - Preserve the existing Bootstrap structure and local CSS variables.
-- Keep payment, export, download, and financial-aid controls visibly non-functional until an approved backend contract exists.
+- Treat payment and clearance page actions as real shared-database writes; do not test them against operational records without approval.
+- Keep export, download, and financial-aid controls as placeholders until their data contracts are implemented.
 - Do not put database writes, payment processing, or hidden API calls in a Razor view.
 - Use accessible labels, meaningful empty states, validation messages, and keyboard-operable controls when real forms are introduced.
 - Do not expose financial or personally identifiable information in HTML, logs, query strings, or client-side storage.
@@ -69,7 +70,7 @@ The server-side files currently registered in `Program.cs` implement a separate 
 | Define input validation | `Departments/Finance/FinanceMain/Contracts/Validators.cs` or a new Finance validator file |
 | Implement Finance business logic | `Departments/Finance/FinanceMain/Services/` |
 | Define service interfaces | Matching `I*.cs` file in `Departments/Finance/FinanceMain/Services/` |
-| Add persistence | Add Finance-owned DbContext/models/migrations inside this project; do not add Finance tables to another department's context |
+| Add or change persistence | Use the shared MySQL `DefaultConnection` and coordinate changes to shared/Finance tables; do not create a Finance-only database or SQL Server context |
 | Add HTTP API endpoints | A Finance-local controller under `Departments/Finance/FinanceMain/Controllers/` or approved Razor Page handlers |
 | Configure JWT, payment, or data-provider settings | `appsettings.json` plus environment-specific configuration; never commit secrets |
 | Add security headers | `Departments/Finance/FinanceMain/Services/SecurityHeadersExtensions.cs`, then explicitly register the extension in `Program.cs` if required |
@@ -78,7 +79,7 @@ The server-side files currently registered in `Program.cs` implement a separate 
 
 1. Define the Finance contract and authorization rules.
 2. Add validation for amounts, identifiers, dates, status transitions, and idempotency keys.
-3. Add Finance-owned persistence and migrations if data must survive process restarts.
+3. Use shared `user.id` for student references and make schema updates idempotent and compatible with existing `mydb` records.
 4. Implement the service interface and transaction/error behavior.
 5. Register the service in `Program.cs`.
 6. Add an authorized endpoint or page handler and map only the required fields to the UI.
@@ -143,23 +144,23 @@ This inventory reflects functions present in Finance-local code at the review da
 
 ### Finance functions currently missing
 
-No Finance-local function currently loads or calculates:
+The following Finance behavior is still incomplete or mock-backed:
 
 - invoice records or line items;
 - account balances;
-- payment history;
-- payment authorization, capture, refund, or reconciliation;
+- production payment authorization, capture, refund, or reconciliation;
 - PDF invoice or statement generation;
 - scholarship, award, disbursement, or remaining-aid data;
-- Finance database persistence or migrations.
+- fully MySQL-backed assessment, invoice, and aid data.
 
-The buttons and controls for these operations are view-only placeholders in `Pages/Billing.cshtml`, `Pages/Invoice.cshtml`, `Pages/Payments.cshtml`, `Pages/Pay.cshtml`, and `Pages/Aid.cshtml`.
+Assessment, invoice, and aid values still come from demo/in-memory state in some pages. Payment/clearance operations can write shared rows but require live-DB verification and strict student identity checks.
 
 ## Configuration and dependencies
 
-- `FinanceMain.csproj` targets `net10.0` and references Entity Framework Core, JWT bearer authentication, FluentValidation, CsvHelper, Polly, and AspNetCoreRateLimit.
+- `FinanceMain.csproj` targets `net10.0` and references MySqlConnector, Dapper, JWT bearer authentication, FluentValidation, CsvHelper, Polly, and AspNetCoreRateLimit.
 - `Program.cs` currently calls `UseAuthorization()` but does not configure authentication middleware or JWT bearer options. Reconcile this before exposing authenticated Finance endpoints.
-- `Program.cs` registers in-memory stores, so data and refresh tokens are lost when the process stops.
+- `FinanceDataStore` and copied guidance request/token stores are in-memory and reset when the process stops. Finance's schema bootstrap for `student_payments`, `fee_assessments`, and `student_clearance` runs at startup and fails startup if MySQL is unavailable.
+- Configure `ConnectionStrings__DefaultConnection` through the process environment or a secret manager. Do not place credentials in committed settings.
 - Store secrets such as `Jwt:SigningKey` outside committed JSON files using the supported environment or secret-management mechanism.
 - Review `appsettings.json`, `appsettings.Development.json`, and `Properties/launchSettings.json` before changing ports, URLs, or environment behavior.
 

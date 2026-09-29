@@ -35,7 +35,7 @@ The project currently targets `.NET 10`:
 <TargetFramework>net10.0</TargetFramework>
 ```
 
-The Guidance department is connected to the shared campus SQL host through the `CampusSystemDb` connection string and the connector class in `CampusSystem/SQL/CampusSystemDbConnector.cs`. The current local database host is the Docker SQL Server at `localhost,1433` using the `sa` account and the `CampusSystemDb` database.
+Guidance uses the shared MySQL database `mydb`, like the other operational departments. Supply `ConnectionStrings:DefaultConnection` through the `ConnectionStrings__DefaultConnection` environment variable or user-secrets; do not commit credentials or add a department-specific database.
 
 ## Restore dependencies
 
@@ -62,8 +62,9 @@ NuGet packages are restored from the configured NuGet sources. The main project 
 | `CsvHelper` | `33.1.0` | CSV roster import and validation |
 | `FluentValidation.AspNetCore` | `11.3.1` | DTO validation integration |
 | `Polly` | `8.6.4` | Notification retry and circuit breaker |
-| `Microsoft.EntityFrameworkCore` | `10.0.11` | Persistence abstraction and concurrency types |
-| `Microsoft.EntityFrameworkCore.SqlServer` | `10.0.11` | Shared campus database provider for `CampusSystemDb` |
+| `Microsoft.EntityFrameworkCore` | `10.0.11` | Concurrency exception types |
+| `Dapper` | `2.1.89` | MySQL query mapping |
+| `MySqlConnector` | `2.6.2` | MySQL driver |
 
 The test project additionally uses:
 
@@ -127,6 +128,12 @@ dotnet user-secrets set "Jwt:SigningKey" "replace-with-a-long-development-only-s
 
 The application reads the JWT key from `Jwt:SigningKey`. Use environment variables, a managed secret store, or Azure Key Vault for deployed environments.
 
+Set the shared database connection through user-secrets for local development:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<mysql-connection-string>" --project .\GuidanceDepartmentMain.csproj
+```
+
 ## Run locally
 
 From `X:\CampusSystem\Departments\GuidanceDepartment`:
@@ -182,14 +189,12 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 ## Current development limitations
 
-The following are scaffolding implementations and are not production persistence:
+The following remain scaffolding and are not production persistence:
 
-- `InMemoryGuidanceRequestStore`
-- `InMemoryRefreshTokenStore`
 - `AuditLogService`
 - `UnavailableOutboundMessageTransport`
 
-The project is currently wired to the shared campus database via `CampusSystemDbConnector` and the `ConnectionStrings:CampusSystemDb` setting. Before production deployment, replace this in-memory scaffolding with durable, secured department-specific persistence if the Guidance workflows require it. Do not create a separate Guidance-only database; keep the department data in the shared `CampusSystemDb` model unless a formal architecture change approves otherwise.
+Guidance requests and refresh tokens use MySQL stores; `GuidanceDbService` reads the shared `user` table and bootstraps Guidance-owned request, appointment, note, and token tables. Student IDs use the shared numeric `user.id`. Do not apply the inactive EF Core SQL Server context/migrations or create a separate Guidance database.
 
 ## Security checks
 

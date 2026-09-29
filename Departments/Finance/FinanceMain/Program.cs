@@ -1,17 +1,9 @@
-using CampusSystem.Sql;
 using FluentValidation;
 using FinanceMain.Contracts;
 using FinanceMain.Security;
 using FinanceMain.Services;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContextFactory<DbContext>(options =>
-    options.UseSqlServer(campusConnection));
 
 // Add services to the container.
 // Guidance services
@@ -54,19 +46,7 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// Async background verification of shared MySQL schema
-_ = Task.Run(async () =>
-{
-    try
-    {
-        var db = app.Services.GetRequiredService<FinanceDbService>();
-        await db.EnsureSchemaAsync();
-    }
-    catch
-    {
-        // Resilient background init
-    }
-});
+await app.Services.GetRequiredService<FinanceDbService>().EnsureSchemaAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

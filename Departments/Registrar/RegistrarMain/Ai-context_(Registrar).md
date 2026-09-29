@@ -8,8 +8,8 @@ Registrar owns course browsing, registration, academic records, verification, an
 
 Use the task type to decide the correct layer:
 
-- Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Registrar's data lives in its own `RegistrarDbContext`, under the `registrar` SQL schema, within the shared `CampusSystemDb` database. The shared project supplies only the `Student` identity model.
-- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, `Models/`, `Data/RegistrarDbContext.cs`, `Migrations/`, `Program.cs`, and related server files only when the task explicitly requires course, enrollment, transcript, or record processing. The shared `Student` identity type lives at `Shared/CampusSystem.Data/Models/Student.cs` and should not be copied into Registrar.
+- Front-end / interface work: edit Razor Pages in `Pages/`, the shared layout, and styles. Preserve their live calls to the Registrar API, which reads/writes shared MySQL `mydb` tables.
+- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, `Program.cs`, and related API/client files when the task requires course, offering, enrollment, transcript, or document-request behavior. Use shared integer `user.id`; the old EF context and migrations are inactive.
 - AI model rule: if the request does not clearly ask for backend logic, assume it is a UI edit and do not add persistence, form submission, or live academic-data processing.
 
 ## AI maintenance manual
@@ -49,13 +49,13 @@ Before making a change in a future session, read this file first and compare it 
 - `Services/` = business logic and integrations
 - `Contracts/` = interfaces and shared DTOs
 - `Models/` = domain objects and data contracts
-- `Data/RegistrarDbContext.cs` = Registrar-owned EF Core context
-- `Migrations/` = Registrar-owned migration history for the `registrar` schema
-- `Shared/CampusSystem.Data/Models/Student.cs` = shared identity model mapped to `dbo.Students`
+- `Services/DatabaseService.cs` = MySQL access used by Registrar Razor Pages
+- `Services/RegistrarApiSchemaService.cs` = idempotent `document_requests` bootstrap
+- `Controllers/` = MySQL-backed API using shared operational tables
 
 ## Interface-only editing guidance
 
-This project owns the persistence foundation for course, enrollment, transcript, verification, and records data. `RegistrarDbContext` owns only `registrar.*` tables; it references `dbo.Students` from `CampusSystem.Data` and excludes that table from Registrar migrations. Interface edits should remain presentation-focused unless a task explicitly requests backend wiring.
+This project has MySQL-backed API routes for course browsing, offerings, enrollment, transcripts, verification, and records requests. Interface-only edits should preserve those API calls and the offering-based enrollment contract.
 
 ### Files to edit for UI changes
 
@@ -69,7 +69,7 @@ This project owns the persistence foundation for course, enrollment, transcript,
 - Do not wire Razor Page forms directly to the API without an explicit UI task and review.
 - Do not move API request validation or claims-derived identity checks into client-side code.
 - Do not accept `StudentId` from Razor Page form fields or browser request bodies.
-- Do not add student-owned mutations outside the API and `RegistrarDbContext` path.
+- Do not add student-owned mutations outside the API and shared MySQL tables.
 
 ### Approved UI behavior
 
@@ -99,44 +99,33 @@ The Registrar API is available for database and authorization testing. All endpo
 | `GET` | `/api/courses/{id}` | Read one course |
 | `POST` | `/api/courses` | Create a course; Admin role only |
 | `GET` | `/api/registrations/mine` | List the authenticated student's enrollments |
-| `POST` | `/api/registrations` | Enroll the authenticated student in a course |
-| `DELETE` | `/api/registrations/{id}?rowVersion=` | Drop an owned enrollment with optimistic concurrency |
+| `POST` | `/api/registrations` | Enroll the authenticated student in a specific offering using `{ offeringId }` |
+| `DELETE` | `/api/registrations/{id}` | Drop an owned enrolled subject; seat count is adjusted transactionally |
 | `GET` | `/api/transcript/mine` | Read the authenticated student's semester-grouped transcript |
 | `GET` | `/api/verifications/mine` | List the student's verification requests |
 | `POST` | `/api/verifications` | Create a pending verification request |
 | `GET` | `/api/records/mine` | List the student's records requests |
 | `POST` | `/api/records` | Create a pending document request |
 
-The Development test identity is configured in `appsettings.Development.json`. The corresponding student must exist in `dbo.Students`; test identities must not be accepted from request bodies. Production does not register the Development test authentication scheme.
+The Development test identity is configured in `appsettings.Development.json`. Its `StudentId` claim must resolve to a student in the shared MySQL `user` table, by numeric `id` or student number. Test identities must not be accepted from request bodies. Production does not register the Development test authentication scheme.
 
 ## Persistence Implementation
 
-- `RegistrarDbContext` is registered in `Program.cs` with the `CampusSystemDb` connection-string key.
-- Registrar uses SQL Server LocalDB during development and stores its migration history in `registrar.__EFMigrationsHistory_Registrar`.
-- `Course`, `Enrollment`, `TranscriptEntry`, `VerificationRequest`, and `RecordsRequest` are Registrar-owned models mapped to the `registrar` schema.
-- Each student-owned record has a foreign key to the shared `CampusSystem.Data.Models.Student` identity model. `dbo.Students` is mapped with `ExcludeFromMigrations()` so Registrar can query it but cannot create, alter, or drop it.
-- `Enrollment.RowVersion` is a SQL Server rowversion concurrency token.
+- Registrar's Razor pages and API use `DefaultConnection` to shared MySQL `mydb`.
+- Catalog and registration use `subjects`, `class_offerings`, `enrollments`, and `enrolled_subjects`.
+- Transcripts use the shared `grades` table; records and verification requests use `document_requests`.
+- The old EF context and migrations remain as inactive legacy source and are not registered at runtime.
 
-From `Departments/Registrar/RegistrarMain`, review and apply Registrar migrations with:
-
-```powershell
-dotnet ef migrations add <MigrationName> --context RegistrarDbContext
-dotnet ef database update --context RegistrarDbContext
-```
-
-Do not add Registrar entities, `DbSet` properties, or migrations to `Shared/CampusSystem.Data`. That shared project contains the identity model only. Do not create a second physical database or a second Registrar connection-string key.
+Do not run the legacy Registrar EF migrations. Do not create a second physical database or department-specific connection-string key.
 
 ## Change Rules
 
-- Registrar owns `RegistrarDbContext`, its own `Migrations/` folder, and the `registrar` schema inside the shared `CampusSystemDb` database. The Registrar migration history table is `registrar.__EFMigrationsHistory_Registrar`; do not assume there is one shared migration history.
-- Registrar does not modify `CampusSystem.Data` except when the shared `Student` model itself needs a field, which requires cross-team coordination.
-- Use the shared `CampusSystemDb` connection-string key. Direct calls into another department's controllers, services, or API endpoints are not approved.
+- Use the shared MySQL `DefaultConnection` and existing operational tables. Direct calls into another department's controllers, services, or API endpoints are not approved.
 - Derive `StudentId` from authenticated claims; never accept it from request payloads.
 - Protect academic records and enrollment verification with authorization and audit controls as the API expands; the current endpoints enforce authentication and student ownership, while administrative workflows remain deferred.
-- Treat `Enrollment.RowVersion` as a concurrency token and handle update conflicts.
-- Keep the shared LocalDB connection string in local configuration or user-secrets outside source control for non-local environments.
+- Keep student IDs as MySQL integer `user.id`; never create department-local student identities.
 - Preserve existing Razor Pages behavior and department namespace.
-- Keep API writes inside `RegistrarDbContext`; do not add direct SQL or cross-department API calls.
+- Use MySQL/Dapper against existing shared operational tables; do not re-register the legacy SQL Server context or apply its migrations.
 - Run `dotnet build RegistrarMain.csproj` after UI changes, API changes, or data changes.
 - From the workspace root, run `.\Check-GuidanceServices.ps1 -ProjectPath .\Departments\Registrar\RegistrarMain` for Registrar, or `.\Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments -Build` for the full health check.
 

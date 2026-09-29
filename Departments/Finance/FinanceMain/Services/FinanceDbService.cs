@@ -11,7 +11,7 @@ public class FinanceDbService
     public FinanceDbService(IConfiguration config, ILogger<FinanceDbService> logger)
     {
         _connectionString = config.GetConnectionString("DefaultConnection") 
-            ?? "Server=100.98.41.69;Port=3306;Database=mydb;Uid=myuser;Pwd=strongpassword;";
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
         _logger = logger;
     }
 
@@ -73,7 +73,8 @@ public class FinanceDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Could not verify MySQL schema: {Message}. Running in resilient mode.", ex.Message);
+            _logger.LogError(ex, "Could not initialize the Finance MySQL schema.");
+            throw;
         }
     }
 
@@ -89,9 +90,10 @@ public class FinanceDbService
                 "SELECT id FROM `user` WHERE student_id_number = @studentNumber LIMIT 1",
                 new { studentNumber });
         }
-        catch
+        catch (Exception ex)
         {
-            return null;
+            _logger.LogError(ex, "Could not resolve student {StudentNumber} from the shared MySQL database.", studentNumber);
+            throw;
         }
     }
 
@@ -114,7 +116,12 @@ public class FinanceDbService
             await using var db = CreateConnection();
             await db.OpenAsync();
 
-            var studentId = await FindStudentIdByNumberAsync(studentNumber) ?? 5; // fallback to default student
+            var studentId = await FindStudentIdByNumberAsync(studentNumber);
+            if (studentId is null)
+            {
+                _logger.LogWarning("Payment {Receipt} rejected: student {StudentNumber} was not found.", receiptNumber, studentNumber);
+                return false;
+            }
 
             // 1. Insert into student_payments (immediately visible in Student Portal)
             await db.ExecuteAsync(@"

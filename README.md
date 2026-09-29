@@ -1,8 +1,8 @@
 # CampusSystem
 
-CampusSystem is a multi-department ASP.NET Core solution for campus operations. Each department is an independent web application with its own UI, services, database context, SQL schema, and migration history.
+CampusSystem is a multi-department ASP.NET Core solution for campus operations. Each department is an independent web application, and the operational portals share one MySQL database.
 
-The applications share one physical SQL Server LocalDB database during development, but they do not share one database context. This keeps department ownership clear while allowing approved cross-department reads through qualified database schemas.
+The shared operational database is MySQL `mydb`. Departments use the same `DefaultConnection` setting and shared student key (`user.id`); do not introduce department-specific databases or duplicate student identities.
 
 ## Applications
 
@@ -26,55 +26,34 @@ Each department owns:
 
 - Its ASP.NET Core application and UI.
 - Its controllers, services, contracts, and department-specific models.
-- Its EF Core `DbContext`.
-- Its SQL schema in `CampusSystemDb`.
-- Its migration files and migration-history table.
+- Its feature logic and access to the shared operational tables.
+- Any department-specific tables it needs, defined compatibly in the shared `mydb` database.
 
 The department boundary does not permit direct calls to another department's controllers, services, or API endpoints.
 
 ### Shared identity library
 
-`Shared/CampusSystem.Data` contains only the shared `Student` identity model. It is not a shared database layer and does not contain department entities or a shared `DbContext`.
-
-The shared `Student` model maps to `dbo.Students`. Department contexts may reference it for relationships, but a department context must use `ExcludeFromMigrations()` for `dbo.Students` so it cannot create, alter, or drop the identity table.
+`Shared/CampusSystem.Data` contains a legacy shared `Student` model, not a shared database context. Active cross-department records use MySQL `user.id` (integer) from `mydb`; do not assume the legacy GUID model is the operational identity source.
 
 ### Database
 
-Development uses one physical database:
+All departments use this single MySQL database:
 
 ```text
-Server=(localdb)\\mssqllocaldb;Database=CampusSystemDb;Trusted_Connection=True;TrustServerCertificate=True
+Server=<mysql-host>;Port=3306;Database=mydb;Uid=<mysql-user>;Pwd=<secret>;
 ```
 
-The connection-string key is `CampusSystemDb`. Keep credentials and non-local connection strings out of source control; use user-secrets or a managed secret provider for shared, staging, and production environments.
+The configuration key is `ConnectionStrings:DefaultConnection`. Provide it as the `ConnectionStrings__DefaultConnection` environment variable or through a secret manager. Connection credentials must not be committed to source control.
 
-Schemas and migrations are owned independently. Registrar currently uses:
+Existing workflows in Finance, Faculty, Registrar, Student Portal, Guidance, and Library now target `mydb`. Registrar's course, enrollment, transcript, and student-request API uses the same operational tables as its Razor pages; its old SQL Server EF context and migrations are inactive legacy files and must not be applied.
 
-- Schema: `registrar`
-- Context: `RegistrarDbContext`
-- History table: `registrar.__EFMigrationsHistory_Registrar`
-- Identity table referenced but not owned: `dbo.Students`
-
-Future departments should follow the same pattern with their own context, schema, and history table.
-
-Registrar's database API is currently the first end-to-end persistence surface. Its routes cover course browsing, student registration, transcript reads, verification requests, and records requests under `/api`. The Registrar Razor Pages now provide the usable student-facing interface for those routes; other department UIs remain intentionally deferred until their own persistence builds.
+Several active pathways already share MySQL records: Faculty reads rosters and writes grades; Student Portal reads and writes operational tables; Guidance persists requests; Finance writes payment/clearance records; and Registrar reads/writes courses, offerings, enrollments, transcripts, and document requests. Feature coverage still varies by department, and some screens/services remain backed by mocks or placeholders.
 
 ## Prerequisites
 
 - Windows with PowerShell.
 - .NET SDK 10.
-- SQL Server Express LocalDB.
-- `dotnet-ef` version matching the EF Core packages, for example:
-
-```powershell
-dotnet tool install --global dotnet-ef --version 10.0.11
-```
-
-Check LocalDB:
-
-```powershell
-sqllocaldb info
-```
+- Network access to the shared MySQL host and an externally supplied `ConnectionStrings__DefaultConnection`.
 
 ## Build
 
@@ -120,17 +99,11 @@ cd Shared\CampusSystem.Data
 dotnet build CampusSystem.Data.csproj
 ```
 
-## Database migrations
+## Database changes
 
-Run department migrations from that department's project directory. Registrar example:
+Coordinate changes to shared tables across departments. The Registrar app only bootstraps `document_requests`; it does not create or migrate the shared student, subject, enrollment, offering, or grade tables.
 
-```powershell
-cd Departments\Registrar\RegistrarMain
-dotnet ef migrations add <MigrationName> --context RegistrarDbContext
-dotnet ef database update --context RegistrarDbContext
-```
-
-Review generated migrations before applying them. Do not put department entities or migration files in `Shared/CampusSystem.Data`.
+Do not apply the inactive Registrar SQL Server EF migrations. Keep schema changes idempotent and compatible with existing MySQL records.
 
 ## Health checks
 
@@ -140,7 +113,7 @@ Check Registrar only:
 .\Check-GuidanceServices.ps1 -ProjectPath .\Departments\Registrar\RegistrarMain
 ```
 
-Check all departments:
+Check all departments for MySQL wiring and builds:
 
 ```powershell
 .\Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments
@@ -152,7 +125,7 @@ Run checks and builds:
 .\Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments -Build
 ```
 
-A successful full check reports six healthy projects. The checker validates expected service files, namespaces, dependency-injection registrations, package references, and optionally compilation.
+The checker validates all seven department projects for MySQL wiring, credential hygiene, obsolete SQL Server startup configuration, and optionally compilation. Add `-RequireDatabaseConfiguration` to require `ConnectionStrings__DefaultConnection` in the current process environment.
 
 ## Maintenance dashboard
 
@@ -192,6 +165,4 @@ Each department also has its own `Ai-context_*.md` file. Read the owning departm
 
 ## Current implementation status
 
-Registrar has the first department-owned persistence implementation. Its UI routes remain presentation-oriented, while the database models, context, schema, and migrations are in place for deliberate backend wiring.
-
-The other department applications retain their placeholder UI workflows and reference the shared identity library, but their department-specific persistence is intentionally deferred.
+Shared MySQL connectivity is established for all departments. It does not imply full workflow synchronization: Finance still has in-memory assessment data, Library circulation remains a placeholder, and some student identity/session behavior remains hard-coded. See [the shared database handoff](Departments/SHARED-MYSQL-DATABASE.md) and [the issue tracker](AI_CONTEXT_SYSTEM_ISSUES.md) for current boundaries.

@@ -4,6 +4,8 @@ v# Campus System Project Map
 
 This workspace is a campus-wide multi-department system managed as a single VS Code project in the root folder named CampusSystem. It contains one shared maintenance dashboard and separate application projects for each department.
 
+All department applications use the shared MySQL database `mydb` through `ConnectionStrings:DefaultConnection`; the environment and table contracts are documented in [Departments/SHARED-MYSQL-DATABASE.md](Departments/SHARED-MYSQL-DATABASE.md).
+
 ## VS Code 2026 Project Structure
 
 ```mermaid
@@ -47,6 +49,7 @@ flowchart TD
   - [Departments/Registrar](Departments/Registrar)
   - [Departments/StudentPortal](Departments/StudentPortal)
   - [Departments/Testing](Departments/Testing)
+- [Departments/SHARED-MYSQL-DATABASE.md](Departments/SHARED-MYSQL-DATABASE.md) — campus-wide MySQL connection and integration status
 
 - [Shared/CampusSystem.Data](Shared/CampusSystem.Data) — shared `Student` identity model only; department schemas and migrations remain in their owning projects
 

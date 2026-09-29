@@ -16,7 +16,7 @@ Use the task type to decide the correct layer:
 - Front-end / interface work: edit static pages in `wwwroot/`, shared styling in `wwwroot/styles.css`, and navigation/layout structure in the HTML files. Keep forms and workflow cards visual placeholders unless an approved contract exists.
 - Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, DTOs, models, `Program.cs`, and other server files only when the task explicitly requires guidance data, case note logic, or a live API contract.
 - AI model rule: if the request does not clearly include backend requirements, assume it is an interface edit and do not add persistence, API calls, or live student-record submission.
-- Department DB wiring: if a task requires the Guidance UI or API to read live data, connect this project to the shared `CampusSystemDb` using the department `DbContext`, not a standalone Guidance database.
+- Department DB wiring: use shared MySQL `mydb` through `ConnectionStrings:DefaultConnection` and the Dapper/MySqlConnector services in this project; supply credentials via environment or a secret manager.
 
 
 Update this context whenever any of the following changes:
@@ -81,7 +81,7 @@ This project includes a UI layer and a backend API surface, but the static inter
 - No service calls that create or update real guidance records
 - No form submissions to live endpoints without an approved contract
 - No bypass of the existing authorization boundaries for case notes or counselor workflows
-- Do not create a separate Guidance database or add Guidance tables into `CampusSystem.Data`; this project uses the shared campus database (`CampusSystemDb`) through the central connector in `CampusSystem/SQL/CampusSystemDbConnector.cs` and the appsettings `ConnectionStrings:CampusSystemDb` value.
+- Do not create a separate Guidance database or add Guidance tables into `CampusSystem.Data`; use the shared MySQL database and the `user.id` integer for student references.
 - Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 
@@ -96,27 +96,9 @@ This project includes a UI layer and a backend API surface, but the static inter
 ## Department UI
 
 
-Guidance currently uses the shared campus SQL connector and central campus database. The front-end pages remain presentation-only, but the project is now wired to the shared `CampusSystemDb` connection and should keep department business logic and student data access behind the Guidance service layer and its authorization boundaries.
+Guidance reads active student rows from the shared MySQL `user` table. `MySqlGuidancePersistenceStores` stores requests and refresh tokens; `GuidanceDbService` bootstraps Guidance-owned request, appointment, note, and token tables. These services require `ConnectionStrings__DefaultConnection`; schema initialization and shared student reads fail visibly on database errors.
 
-### How to connect Guidance to the shared campus database
-
-When a new Guidance data task needs live records, use this pattern:
-
-1. Read the campus connection string named `CampusSystemDb` from `appsettings.json`.
-2. Resolve it in `Program.cs` and pass it to the Guidance-specific `DbContext`.
-3. Register the context with `AddDbContextFactory<GuidanceDbContext>` or `AddDbContext<GuidanceDbContext>` using `UseSqlServer(campusConnection)`.
-4. Keep the `GuidanceDbContext` and its model mappings in this project, while the shared `Student` identity model stays in `CampusSystem.Data`.
-5. Query only the `CampusSystemDb` physical database; do not create a second Guidance database or a separate campus database file.
-6. Use the `Students` table and the shared campus schema for cross-department reads when the record is already created by the owning department.
-
-Example:
-
-```csharp
-var campusConnection = builder.Configuration.GetConnectionString("CampusSystemDb");
-
-builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
-    options.UseSqlServer(campusConnection));
-```
+The legacy EF Core context and SQL Server migration files are inactive and excluded from compilation. Do not re-enable or apply them. The static UI remains partly presentation-only; keep sensitive case-note and counselor workflows behind explicit authorization.
 
 - `/index.html`: department overview and core module workspace hub
 - `/dashboard.html`: counselor operations dashboard with priority queue and live stats
@@ -137,8 +119,8 @@ The Guidance UI is fully styled in the National University Lipa institutional de
 
 - Preserve the static-file/controller architecture; do not convert to Razor Pages without an explicit decision.
 - Do not add persistence or service calls to placeholder pages without an approved contract.
-- Use the shared campus database connection rather than creating a separate Guidance database. The current connection is centralized in `CampusSystem/SQL/CampusSystemDbConnector.cs` and reads the `CampusSystemDb` connection string from `appsettings.json`.
-- When adjusting any department to use live data, wire that department to the shared `CampusSystemDb` through that department's own context and schema, not through a new database or a shared cross-project context.
-- Keep `InMemoryGuidanceRequestStore` and other in-memory scaffolding clearly marked as development-only until a durable department persistence layer is approved and implemented.
+- Use shared MySQL `mydb` through `ConnectionStrings:DefaultConnection`; never store its credentials in committed settings.
+- Student identity is the shared integer `user.id`, not the legacy GUID identity model.
+- Guidance requests and refresh tokens use MySQL stores; audit logging and outbound notifications still need durable/production implementations.
 - Preserve security boundaries around student requests, counselor triage, and case notes.
 - Read `DEVELOPER_SETUP.md` and `SERVICES.md` before service or API changes.

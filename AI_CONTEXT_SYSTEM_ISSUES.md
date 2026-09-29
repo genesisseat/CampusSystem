@@ -12,7 +12,7 @@
 
 The Campus System is designed as a multi-department ecosystem sharing **ONE centralized MySQL database (`mydb`)**. While all four primary web applications can run concurrently and have basic MySQL drivers installed, **the critical business logic flows between departments remain fractured**. 
 
-Major portions of the systems still rely on in-memory mock datasets (e.g. `FinanceDataStore`), static HTML pages without persistence, and hardcoded identity sessions. As a result, actions taken in one portal (such as a student paying tuition or submitting an enrollment form) fail to propagate to other departments as intended.
+All seven department applications now have a shared MySQL `mydb` connection path using integer `user.id`. Major portions still rely on in-memory mock datasets (especially Finance assessments), placeholder pages, or hardcoded identity sessions, so database connectivity must not be confused with end-to-end workflow synchronization.
 
 ---
 
@@ -30,7 +30,7 @@ flowchart TD
 
 ### Category I: 🗄️ Database & Schema Issues (`mydb` vs. Code)
 1. **Inconsistent ID Types:**
-   - The MySQL database uses auto-incrementing integers for `user.id` (`1, 2, 5...`), whereas Finance was originally built with `Guid` identifiers (`8c2f7bc9-...`), causing joins and Lookups across departments to fail.
+    - The operational MySQL database uses integer `user.id`. Guidance and Registrar API paths now resolve this shared ID, but Finance's legacy assessment contracts still carry GUIDs and must not be joined directly to campus users without a mapping.
 2. **Missing Relational Constraints & Foreign Keys:**
    - `student_payments` stores `student_id` without strict foreign keys to `fee_assessments(id)`.
    - `student_clearance` lacks cascading foreign key rules.
@@ -38,7 +38,7 @@ flowchart TD
    - **Tuition Fee Rate Matrix:** No dynamic table for unit rates (`₱1,500/unit`) and laboratory fees per program.
    - **Installment Payment Schedule:** No table tracking split terms (Downpayment, Midterm Installment, Final Installment).
    - **Library Management:** No `library_books`, `book_loans`, or `library_reservations` tables.
-   - **Guidance Records:** No `guidance_appointments` or `counseling_case_notes` tables in MySQL.
+    - **Guidance Records:** `guidance_appointments`, `guidance_notes`, and `guidance_requests` are now bootstrapped in MySQL; the case-note/appointment UI and authorization workflow are not complete.
    - **Faculty Coursework:** No tables for `attendance_logs`, `assignments`, or `student_submissions`.
 
 ---
@@ -47,6 +47,7 @@ flowchart TD
 4. **The In-Memory Data Store Trap (`FinanceDataStore`):**
    - The `/Assessments`, `/Billing`, and `/Payments` pages query a singleton in-memory C# list containing 9 hardcoded demo students (Maria Clara, etc.).
    - When a student pays via Student Portal, the transaction inserts into MySQL `student_payments`, but **Finance's admin ledger does not display it** because it reads from the in-memory store.
+    - `FinanceDbService.UpdateClearanceStatusAsync` still falls back to student ID `5` when lookup fails; remove that fallback before using the clearance write path.
 5. **Static Invoice Lookup:**
    - `/Invoice/{id}` queries the in-memory list only. Real students enrolled via Registrar show `"No assessment record found"`.
 6. **Lumpsum Billing (No Installment Tracking):**
@@ -96,11 +97,11 @@ flowchart TD
 ---
 
 ### Category VI: 🧭 Guidance Department (`GuidanceDepartmentMain`) Gaps
-19. **100% Isolation from Campus Ecosystem:**
-    - Configured with legacy SQL Server (`localhost:1433`); not connected to MySQL `mydb`.
-    - Does not run concurrently with the other 4 portals.
+19. **Guidance shared-database integration:**
+    - Guidance now uses the shared MySQL `mydb` connection and numeric `user.id`; student lookup and request/token persistence are active.
+    - The UI remains partly static, and counselor authentication, clearance UI wiring, and cross-department referral authorization still need work.
 20. **Guidance Clearance Disconnect:**
-    - Semestral clearance contains a `"Guidance Office"` requirement, but there is no active counselor interface to sign it off.
+    - A Guidance MySQL service can upsert shared `student_clearance`, but there is no active counselor interface/approval workflow to sign it off.
 21. **No Early Warning Intervention Trigger:**
     - When a faculty member encodes a failing grade (`5.00`) or `INC`, no notification or referral is dispatched to Guidance for academic counseling.
 
@@ -182,8 +183,8 @@ flowchart TD
 
 | Phase | Focus Area | Deliverables |
 |:---:|---|---|
-| **Phase 1** | **Finance MySQL Persistence** | Replace in-memory `FinanceDataStore` with direct MySQL queries for `fee_assessments`, `student_payments`, and `user`. Ensure all student payments appear immediately in Finance. |
+| **Phase 1** | **Finance MySQL Persistence** | Shared MySQL connection and payment/clearance writes are active; replace the in-memory assessment/ledger store and verify end-to-end payment visibility. |
 | **Phase 2** | **End-to-End Enrollment Loop** | Build interactive Enlistment Form in Student Portal. Wire reservation $\rightarrow$ Finance auto-assessment (OAO) $\rightarrow$ Downpayment $\rightarrow$ Registrar validation $\rightarrow$ Faculty Roster. |
 | **Phase 3** | **Installment & Fee Schedule** | Implement Downpayment, Midterm, and Final installment tracking in both Student Portal and Finance. |
 | **Phase 4** | **Document Requests & Add/Drop** | Wire Student Document Requests to Finance billing and Registrar 201 Vault. Wire Add/Drop approvals to Finance tuition adjustments. |
-| **Phase 5** | **Guidance & Unified Auth** | Port Guidance Department to MySQL `mydb`. Build single sign-on login page with role-based route protection. |
+| **Phase 5** | **Guidance & Unified Auth** | Guidance request/token persistence is on MySQL `mydb`; build and validate real authentication, role protection, and counselor workflows. |

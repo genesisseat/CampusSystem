@@ -1,11 +1,11 @@
 # Finance Department Database Tables
 
-This reference documents the Finance department's MySQL tables created or used by `FinanceDbService`. Finance also has a SQL Server connection configured, but its current guidance services use in-memory stores rather than SQL Server persistence.
+This reference documents the Finance department's tables created or used by `FinanceDbService` in shared MySQL `mydb`.
 
 ## Database connections
 
-- MySQL `DefaultConnection`: host `100.98.41.69`, port `3306`, database `mydb`.
-- SQL Server `CampusSystemDb`: `localhost,1433`, database `CampusSystemDb` (registered as a generic DbContext factory; no Finance-owned SQL Server entities are mapped here).
+- MySQL `DefaultConnection`: shared database `mydb`.
+- Provide `ConnectionStrings__DefaultConnection` through the environment or a secret manager; do not commit credentials.
 
 ## MySQL tables
 
@@ -64,7 +64,9 @@ Finance queries `user.id` by `student_id_number` to resolve a student. Its schem
 
 - `student_payments.student_id` and `student_clearance.student_id` refer to the shared MySQL student/user identifiers.
 - `student_payments` and `student_clearance` are shared with Student Portal and other campus department workflows.
-- The Finance application creates/verifies the three Finance-related MySQL tables during startup in resilient background initialization.
+- Finance creates/verifies its tables during synchronous startup initialization and fails startup if MySQL initialization fails.
+- `FinanceDataStore` still supplies in-memory assessment/ledger demo data. Shared DB connectivity alone does not make all Finance pages read from MySQL.
+- Payment persistence rejects an unknown student number. Review `UpdateClearanceStatusAsync` for its remaining legacy fallback student ID before using that path operationally.
 
 ## Notes
 

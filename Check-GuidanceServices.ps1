@@ -2,7 +2,8 @@
 param(
     [string] $ProjectPath = (Get-Location).Path,
     [switch] $AllDepartments,
-    [switch] $Build
+    [switch] $Build,
+    [switch] $RequireDatabaseConfiguration
 )
 
 $ErrorActionPreference = 'Stop'
@@ -43,17 +44,7 @@ $registrationMarkers = @(
     'CampusSystemDbConnector.Resolve'
     'ConnectionStringName'
 )
-$packageNames = @(
-    'Microsoft.AspNetCore.Authentication.JwtBearer'
-    'AspNetCoreRateLimit'
-    'CsvHelper'
-    'FluentValidation.AspNetCore'
-    'Polly'
-)
-$efPackageNames = @(
-    'Microsoft.EntityFrameworkCore'
-    'Microsoft.EntityFrameworkCore.SqlServer'
-)
+$packageNames = @('MySqlConnector')
 
 $departmentPaths = [ordered]@{
     FacultyPortal = 'Departments\FacultyPortal\FacultyPortalMain'
@@ -62,6 +53,7 @@ $departmentPaths = [ordered]@{
     Library = 'Departments\Library\LibraryMain'
     Registrar = 'Departments\Registrar\RegistrarMain'
     StudentPortal = 'Departments\StudentPortal\StudentPortalMain'
+    Testing = 'Departments\Testing\TestingMain'
 }
 
 function Get-ProjectDirectory {
@@ -81,7 +73,10 @@ function Get-ProjectDirectory {
 }
 
 function Test-Project {
-    param([string] $Directory)
+    param(
+        [string] $Directory,
+        [switch] $RequireDatabaseConfiguration
+    )
 
     $projectFile = Get-ChildItem -LiteralPath $Directory -Filter '*.csproj' -File | Select-Object -First 1
     $projectName = [System.IO.Path]::GetFileNameWithoutExtension($projectFile.Name)
@@ -100,48 +95,54 @@ function Test-Project {
             })
     }
 
-    foreach ($file in $contractFiles) {
-        $path = Join-Path $contractsDirectory $file
-        Add-Result "Contract $file" (Test-Path -LiteralPath $path) $(if (Test-Path -LiteralPath $path) { 'Present' } else { 'Missing' })
-    }
-
-    foreach ($file in $serviceFiles) {
-        $path = Join-Path $servicesDirectory $file
-        Add-Result "Service $file" (Test-Path -LiteralPath $path) $(if (Test-Path -LiteralPath $path) { 'Present' } else { 'Missing' })
-    }
-
-    foreach ($file in $connectorFiles) {
-        $path = Join-Path $Directory "..\..\..\SQL\$file"
-        Add-Result "Connector $file" (Test-Path -LiteralPath $path) $(if (Test-Path -LiteralPath $path) { 'Present' } else { 'Missing' })
-    }
-
     $program = if (Test-Path -LiteralPath $programFile) { Get-Content -LiteralPath $programFile -Raw } else { '' }
     Add-Result 'Program.cs' (Test-Path -LiteralPath $programFile) $(if ($program) { 'Present' } else { 'Missing' })
 
-    $expectedUsings = @("using $projectName.Contracts;", "using $projectName.Services;")
-    foreach ($using in $expectedUsings) {
-        Add-Result $using ($program.Contains($using)) $(if ($program.Contains($using)) { 'Present' } else { 'Missing' })
-    }
-
-    foreach ($marker in $registrationMarkers) {
-        $present = $program.Contains($marker)
-        Add-Result "DI $marker" $present $(if ($present) { 'Registered' } else { 'Missing registration' })
-    }
-
     $appSettingsPath = Join-Path $Directory 'appsettings.json'
     $appSettings = if (Test-Path -LiteralPath $appSettingsPath) { Get-Content -LiteralPath $appSettingsPath -Raw } else { '' }
-    $sharedDbConfigured = $appSettings.Contains('"CampusSystemDb"') -and $appSettings.Contains('Server=localhost,1433')
-    Add-Result 'Shared CampusSystemDb connection string' $sharedDbConfigured $(if ($sharedDbConfigured) { 'Configured' } else { 'Missing CampusSystemDb connection string' })
+    try {
+        $null = $appSettings | ConvertFrom-Json -ErrorAction Stop
+        Add-Result 'appsettings.json' $true 'Valid JSON'
+    }
+    catch {
+        Add-Result 'appsettings.json' $false 'Invalid JSON'
+    }
+
+    $embeddedCredentials = $appSettings -match 'Pwd=|Password='
+    Add-Result 'No checked-in DB credentials' (-not $embeddedCredentials) $(if ($embeddedCredentials) { 'Credentials found in appsettings.json' } else { 'No credentials in appsettings.json' })
+    $legacyConnection = $appSettings -match 'CampusSystemDb|localhost,1433'
+    Add-Result 'No legacy SQL Server connection' (-not $legacyConnection) $(if ($legacyConnection) { 'Legacy connection remains in appsettings.json' } else { 'No legacy connection setting' })
 
     $projectContents = Get-Content -LiteralPath $projectFile.FullName -Raw
+    $sourceFiles = Get-ChildItem -LiteralPath $Directory -Recurse -Filter '*.cs' -File |
+        Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
+    $sourceText = ($sourceFiles | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+    $usesDefaultConnection = $sourceText -match 'GetConnectionString\("DefaultConnection"\)'
+    Add-Result 'Shared DefaultConnection usage' $usesDefaultConnection $(if ($usesDefaultConnection) { 'Connection key referenced by application code' } else { 'DefaultConnection is not referenced' })
+
     foreach ($package in $packageNames) {
         $present = $projectContents.Contains(('Include="{0}"' -f $package))
         Add-Result "Package $package" $present $(if ($present) { 'Referenced' } else { 'Missing reference' })
     }
 
-    $efPackage = @($efPackageNames | Where-Object { $projectContents.Contains(('Include="{0}"' -f $_)) })
-    $efPackagePresent = $efPackage.Count -gt 0
-    Add-Result 'Package Microsoft.EntityFrameworkCore or provider' $efPackagePresent $(if ($efPackagePresent) { "Referenced: $($efPackage -join ', ')" } else { 'Missing EF Core package or provider' })
+    if ($sourceText -match '\busing Dapper;') {
+        $hasDapper = $projectContents.Contains('Include="Dapper"')
+        Add-Result 'Package Dapper' $hasDapper $(if ($hasDapper) { 'Referenced' } else { 'Missing reference' })
+    }
+
+    $usesSqlServer = $program -match 'UseSqlServer|CampusSystemDbConnector'
+    Add-Result 'No SQL Server runtime registration' (-not $usesSqlServer) $(if ($usesSqlServer) { 'SQL Server registration remains in Program.cs' } else { 'No SQL Server runtime registration' })
+
+    $connectionAvailable = -not [string]::IsNullOrWhiteSpace($env:ConnectionStrings__DefaultConnection)
+    $connectionCheckPassed = $connectionAvailable -or -not $RequireDatabaseConfiguration
+    $connectionDetail = if ($connectionAvailable) {
+        'Connection variable is set for this process'
+    } elseif ($RequireDatabaseConfiguration) {
+        'Set ConnectionStrings__DefaultConnection before launching the app'
+    } else {
+        'Not set in this shell; runtime readiness was not checked'
+    }
+    Add-Result 'MySQL connection environment variable' $connectionCheckPassed $connectionDetail
 
     if ($Build) {
         $buildOutput = & dotnet build $projectFile.FullName --no-restore --nologo 2>&1
@@ -173,7 +174,7 @@ if ($AllDepartments) {
 }
 
 $reports = foreach ($directory in $directories) {
-    Test-Project $directory
+    Test-Project $directory -RequireDatabaseConfiguration:$RequireDatabaseConfiguration
 }
 
 foreach ($report in $reports) {

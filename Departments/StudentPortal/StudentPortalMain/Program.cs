@@ -1,16 +1,10 @@
-using CampusSystem.Sql;
 using FluentValidation;
-using Microsoft.EntityFrameworkCore;
 using StudentPortalMain.Contracts;
 using StudentPortalMain.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContextFactory<DbContext>(options =>
-    options.UseSqlServer(campusConnection));
+var mysqlConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -37,7 +31,7 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddTransient<MySqlConnector.MySqlConnection>(_ =>
-    new MySqlConnector.MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+    new MySqlConnector.MySqlConnection(mysqlConnectionString));
 builder.Services.AddScoped<StudentPortalDbService>();
 
 builder.Services.AddRazorPages();

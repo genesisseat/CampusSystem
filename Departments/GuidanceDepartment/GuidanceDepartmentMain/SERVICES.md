@@ -10,11 +10,11 @@ The service layer returns DTOs and `ServiceResult<T>` values; controllers should
 - `PiiMaskingService`: configurable email, phone, and SSN-like redaction for exports and summaries.
 - `NotificationService`: outbound transport wrapped in Polly retry and circuit-breaker policies; failures are audited and returned as `false`.
 
-`InMemoryGuidanceRequestStore` and `InMemoryRefreshTokenStore` are development scaffolding. The project is currently configured to the shared campus SQL host through `CampusSystem.Sql.CampusSystemDbConnector` and the `CampusSystemDb` connection string, but the in-memory stores remain placeholders until the department persistence layer is explicitly approved and implemented.
+Guidance request and refresh-token stores use MySQL `mydb` through `MySqlGuidancePersistenceStores`. Student directory reads use the shared `user` table through `GuidanceDbService`; student IDs are integer `user.id`. `AuditLogService` remains in-process and outbound message delivery is unavailable until a production transport is configured.
 
 ## Configuration and CI
 
-Keep signing keys and connection strings out of JSON. Use `dotnet user-secrets` during development and an Azure Key Vault configuration provider in production. The Guidance app expects the shared `CampusSystemDb` connection string in `appsettings.json` and resolves it through `CampusSystemDbConnector.Resolve(...)` in `Program.cs`. Add this dependency check to CI:
+Keep signing keys and connection strings out of JSON. Supply the shared `ConnectionStrings:DefaultConnection` with environment variables/user-secrets in development and a managed secret provider in production. The process variable is `ConnectionStrings__DefaultConnection`. Add this dependency check to CI:
 
 ```text
 dotnet list package --vulnerable

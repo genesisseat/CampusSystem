@@ -2,7 +2,7 @@
 
 This document summarizes the database tables used by the Student Portal department, based on the application code and MySQL queries in the Student Portal project.
 
-> Important: the Student Portal is configured to use MySQL (`DefaultConnection`) rather than the SQL Server `CampusSystemDb` connection used by the Registrar project.
+> All operational departments use shared MySQL database `mydb` through `ConnectionStrings:DefaultConnection`. Student identity is the integer `user.id`.
 
 ## 1) Core student and identity tables
 

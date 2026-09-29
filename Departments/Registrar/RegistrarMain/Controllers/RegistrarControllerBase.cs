@@ -1,23 +1,29 @@
 using System.Security.Claims;
-using CampusSystem.Data.Models;
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using RegistrarMain.Data;
+using MySqlConnector;
 
 namespace RegistrarMain.Controllers;
 
 [ApiController]
-public abstract class RegistrarControllerBase(RegistrarDbContext db) : ControllerBase
+public abstract class RegistrarControllerBase(MySqlConnection db) : ControllerBase
 {
-    protected RegistrarDbContext Db { get; } = db;
+    protected MySqlConnection Db { get; } = db;
 
-    protected async Task<Student?> GetCurrentStudentAsync(CancellationToken cancellationToken)
+    protected async Task<int?> GetCurrentStudentIdAsync(CancellationToken cancellationToken)
     {
-        var studentId = User.FindFirstValue("StudentId");
-        if (string.IsNullOrWhiteSpace(studentId) || !Guid.TryParse(studentId, out var parsedGuid))
+        var studentKey = User.FindFirstValue("StudentId");
+        if (string.IsNullOrWhiteSpace(studentKey))
             return null;
 
-        return await Db.Set<Student>().SingleOrDefaultAsync(student => student.Id == parsedGuid, cancellationToken);
+        int? numericId = int.TryParse(studentKey, out var parsedId) && parsedId > 0 ? parsedId : null;
+        return await Db.QuerySingleOrDefaultAsync<int?>(new CommandDefinition(@"
+            SELECT id
+            FROM `user`
+            WHERE role = 'student'
+              AND ((@numericId IS NOT NULL AND id = @numericId) OR student_id_number = @studentKey)
+            LIMIT 1",
+            new { numericId, studentKey }, cancellationToken: cancellationToken));
     }
 
     protected IActionResult MissingStudent() => Problem(
@@ -25,19 +31,4 @@ public abstract class RegistrarControllerBase(RegistrarDbContext db) : Controlle
         title: "Student identity is not available",
         detail: "The authenticated student claim does not resolve to a registered student.");
 
-    protected static string EncodeRowVersion(byte[] rowVersion) => Convert.ToBase64String(rowVersion);
-
-    protected static bool TryDecodeRowVersion(string encoded, out byte[] rowVersion)
-    {
-        try
-        {
-            rowVersion = Convert.FromBase64String(encoded);
-            return rowVersion.Length > 0;
-        }
-        catch (FormatException)
-        {
-            rowVersion = [];
-            return false;
-        }
-    }
 }

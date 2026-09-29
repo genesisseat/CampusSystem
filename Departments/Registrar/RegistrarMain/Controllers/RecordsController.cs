@@ -1,48 +1,51 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Dapper;
+using MySqlConnector;
 using RegistrarMain.Contracts;
-using RegistrarMain.Data;
-using RegistrarMain.Models;
 
 namespace RegistrarMain.Controllers;
 
 [Route("api/records")]
-public sealed class RecordsController(RegistrarDbContext db) : RegistrarControllerBase(db)
+public sealed class RecordsController(MySqlConnection db) : RegistrarControllerBase(db)
 {
     [HttpGet("mine")]
     [Authorize]
     public async Task<IActionResult> Mine(CancellationToken cancellationToken)
     {
-        var student = await GetCurrentStudentAsync(cancellationToken);
-        if (student is null) return MissingStudent();
+        var studentId = await GetCurrentStudentIdAsync(cancellationToken);
+        if (studentId is null) return MissingStudent();
 
-        var requests = await Db.RecordsRequests.AsNoTracking()
-            .Where(request => request.StudentId == student.Id)
-            .OrderByDescending(request => request.RequestedAt)
-            .Select(request => new RecordsResponseDto(request.Id, request.DocumentType, request.Status, request.RequestedAt))
-            .ToListAsync(cancellationToken);
-        return Ok(requests);
+        const string query = @"
+            SELECT id AS Id, document_type AS DocumentType,
+                   status AS Status, requested_at AS RequestedAt
+            FROM document_requests
+            WHERE student_id = @studentId AND document_type <> 'Enrollment Verification'
+            ORDER BY requested_at DESC";
+        var requests = await Db.QueryAsync<RecordsResponseDto>(
+            new CommandDefinition(query, new { studentId }, cancellationToken: cancellationToken));
+        return Ok(requests.AsList());
     }
 
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> Create(RecordsRequestDto request, CancellationToken cancellationToken)
     {
-        var student = await GetCurrentStudentAsync(cancellationToken);
-        if (student is null) return MissingStudent();
+        var studentId = await GetCurrentStudentIdAsync(cancellationToken);
+        if (studentId is null) return MissingStudent();
         if (string.IsNullOrWhiteSpace(request.DocumentType)) return BadRequest("Document type is required.");
 
-        var record = new RecordsRequest
+        const string insert = @"
+            INSERT INTO document_requests
+                (student_id, document_type, purpose, copies, status, requested_at)
+            VALUES (@studentId, @documentType, 'Requested through Registrar portal', 1, 'pending', NOW());
+            SELECT LAST_INSERT_ID();";
+        var id = await Db.ExecuteScalarAsync<int>(new CommandDefinition(insert, new
         {
-            StudentId = student.Id,
-            DocumentType = request.DocumentType.Trim(),
-            Status = "Pending",
-            RequestedAt = DateTime.UtcNow
-        };
-        Db.RecordsRequests.Add(record);
-        await Db.SaveChangesAsync(cancellationToken);
-        var response = new RecordsResponseDto(record.Id, record.DocumentType, record.Status, record.RequestedAt);
-        return Created($"/api/records/{record.Id}", response);
+            studentId,
+            documentType = request.DocumentType.Trim()
+        }, cancellationToken: cancellationToken));
+        var response = new RecordsResponseDto(id, request.DocumentType.Trim(), "pending", DateTime.UtcNow);
+        return Created($"/api/records/{id}", response);
     }
 }

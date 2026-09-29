@@ -37,7 +37,7 @@ Every department currently targets `net10.0`, uses nullable reference types and 
 | Registrar | `Departments/Registrar/RegistrarMain` | `RegistrarMain` |
 | StudentPortal | `Departments/StudentPortal/StudentPortalMain` | `StudentPortalMain` |
 
-GuidanceDepartment is the source/reference implementation for the service layer. The other five projects contain namespace-adjusted copies, so the service layer remains duplicated per project. `Shared/CampusSystem.Data` contains only the shared `Student` identity model. Each department owns its own `DbContext`, its own entity models, and its own migration history inside its own project, scoped to its own SQL schema, all pointed at the one physical `CampusSystemDb` database. No department should need to edit another department's `DbContext` or another department's migrations. The only shared file teams routinely reference is the `Student` model itself.
+Each department is an independent application, but all seven operational applications use shared MySQL `mydb` through `ConnectionStrings:DefaultConnection`. The shared student key is integer `user.id`; do not create a second physical database or department-local student identity. `Shared/CampusSystem.Data` contains a legacy student model, not the operational MySQL database layer.
 
 Cross-department reads may query another department's schema in the same physical database only after that source department has populated it. Department controllers, services, and API endpoints remain separately owned; do not call another department's API surface directly.
 
@@ -182,37 +182,20 @@ The default dashboard port is `5080`. If an older dashboard listener remains on 
 dotnet list package --vulnerable
 ```
 
-## Connecting a department to the shared campus database
+## Connecting a department to shared MySQL
 
-Each department connects to the same physical `CampusSystemDb` database, not to a separate project database. Use the shared campus connection and keep the department's schema and models inside that department's own project.
+All seven department applications use one operational MySQL database, `mydb`, through the `ConnectionStrings:DefaultConnection` key. Provide `ConnectionStrings__DefaultConnection` through the process environment or a managed secret provider; never commit credentials to settings files or scripts.
 
 ### Required wiring pattern
 
-1. Confirm the department uses the shared connection string name `CampusSystemDb`.
-2. Add the connection string to that department's `appsettings.json`:
+1. Use the shared `DefaultConnection` key and MySqlConnector; use Dapper where appropriate for existing operational tables.
+2. Reference student rows through integer `user.id` and student numbers through `user.student_id_number`.
+3. Reuse existing tables and coordinate any compatible department-owned table additions within `mydb`.
+4. Do not add SQL Server runtime registrations, new physical databases, or department-local student identities.
+5. Do not apply inactive Registrar or Guidance SQL Server EF migrations.
+6. Validate build health and use read-only live queries before enabling writes against the operational database.
 
-```json
-"ConnectionStrings": {
-  "CampusSystemDb": "Server=localhost,1433;Database=CampusSystemDb;User Id=sa;Password=MakeItStrong!2026;TrustServerCertificate=True;Encrypt=False"
-}
-```
-
-3. Resolve the shared connection string in `Program.cs` and pass it into that department's `DbContext`.
-4. Register the department `DbContext` with `AddDbContextFactory<DepartmentDbContext>` or `AddDbContext<DepartmentDbContext>` using `UseSqlServer(campusConnection)`.
-5. Keep the department-owned entities, `DbSet`s, and migration history inside that department's project. Do not add another department's tables into a shared context file.
-6. Reuse the shared `Student` model from `Shared/CampusSystem.Data` when the data is truly campus-wide, but leave the department-specific schema and model ownership in that department's project.
-7. Validate with a targeted read query and a browser/API check before treating the feature as complete.
-
-### Example pattern
-
-```csharp
-var campusConnection = builder.Configuration.GetConnectionString("CampusSystemDb");
-
-builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
-    options.UseSqlServer(campusConnection));
-```
-
-This pattern is the standard wiring for Guidance and any future department that needs real campus data. Do not create a new database for the department unless the product requirement explicitly says the data is isolated and separate from the campus system.
+See `Departments/SHARED-MYSQL-DATABASE.md` for the current department map and API/data contracts. Structural build checks do not replace live database verification.
 
 ## AI Change Rules
 
@@ -222,9 +205,9 @@ This pattern is the standard wiring for Guidance and any future department that 
 4. Do not overwrite user changes or backups without inspection.
 5. After edits, run the narrowest relevant checker first, then build the affected project.
 6. If changing checker output labels or dashboard API shape, update both the parser and the HTML consumer.
-7. When a department needs live data, wire it through that department's own `DbContext` to the shared `CampusSystemDb` connection; do not create a separate DB or a shared cross-department context.
+7. When a department needs live data, use the shared MySQL `DefaultConnection` and existing operational tables; provide credentials through environment or a secret manager, never committed settings.
 8. Treat a passing integrity check as structural health only; it does not prove production persistence, external messaging, or real authentication configuration.
 
 ## Current Validation Expectations
 
-A complete workspace validation should report six department projects. A healthy result requires all expected service files, contracts, namespaces, DI registrations, package references, and builds to pass. Build failures should be reported with the department name and compiler diagnostic, not hidden behind a generic health status.x kjhgbvfcdxsza
+A complete workspace validation checks seven department projects. Run `Check-GuidanceServices.ps1 -ProjectPath . -AllDepartments -Build`; add `-RequireDatabaseConfiguration` when the current process must also carry the connection secret. Structural builds do not prove live database readiness.

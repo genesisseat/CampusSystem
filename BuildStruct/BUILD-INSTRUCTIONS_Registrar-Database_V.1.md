@@ -1,5 +1,7 @@
 # Build Instructions: Split Shared DbContext into Per-Department Contexts V1
 
+> **Superseded (2026-09-29):** Historical SQL Server/LocalDB instructions. Do not execute these steps. Use [the shared MySQL database handoff](../Departments/SHARED-MYSQL-DATABASE.md) instead.
+
 **Supersedes:** `BUILD-INSTRUCTIONS_Shared-Campus-Database.md` and `INSTRUCTIONS_Update-AI-Context-Files.md`. Both described a single `CampusSystemDbContext` owning every department's tables and one shared migration history. That design is being corrected here because it forces every department team to edit a shared file outside their own project — the opposite of what was asked for.
 
 **What stays the same:** one physical database (`CampusSystemDb`), one LocalDB instance, one connection string shared by all six departments, per-department SQL schemas (`registrar`, `finance`, `library`, etc.).

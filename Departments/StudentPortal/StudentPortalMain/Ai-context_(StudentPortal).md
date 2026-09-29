@@ -6,7 +6,7 @@ StudentPortal owns the student-facing experience: Dashboard, Schedule, Grades, E
 
 ## System Architecture & Connectivity
 
-StudentPortal connects to the shared institutional database (`mydb` on MySQL `100.98.41.69:3306`) matching RegistrarMain, using `MySqlConnector` and `Dapper`:
+StudentPortal uses the same shared MySQL database `mydb` as the other departments, through `ConnectionStrings:DefaultConnection` supplied via environment or a secret manager. It uses `MySqlConnector` and Dapper; student IDs are integer `user.id`:
 - **Registrar Database**:
   - `user`: Authenticated student accounts and active sessions.
   - `student_profile`: Program, curriculum year, academic standing, completed units, clearance.
@@ -14,13 +14,13 @@ StudentPortal connects to the shared institutional database (`mydb` on MySQL `10
   - `class_offerings` & `subjects`: Class schedules, rooms, instructors, lecture/lab credits.
   - `enrollments` & `enrolled_subjects`: Official course enrollments and printable Certificate of Registration (COR).
   - `grades`: Final grades encoded/controlled by Registrar; real-time GWA calculation.
-  - `transcript_requests`: Live document requests with security tracking tokens (`MSU-[TYPE]-YEAR-[TOKEN]`), synchronized with Registrar's `DocumentProcessing.cshtml`.
+   - `document_requests`: Shared document and verification requests where a workflow has been connected; do not assume all request pages use this table yet.
   - `add_drop_requests`: Add/Drop petitions submitted to Registrar's `EnrollmentValidation.cshtml`.
   - `overload_waiver_requests`: Overload petitions submitted to Registrar.
   - `completion_revision_requests`: INC completion and grade revision petitions submitted to Registrar's `GradeControl.cshtml`.
   - `activity_log`: Audit logs of student transactions.
   - `settings`: Institutional settings (`current_school_year`, `current_semester`).
-- **Guidance Services**: `GuidanceDbContext` EF Core connection to `CampusSystemDb`.
+- **Guidance Services**: Guidance uses its own MySQL-backed service/API over shared `user.id`; Student Portal should use the approved Guidance API contract, not an EF Core context or a direct controller call.
 
 ## Department UI & Implemented Modules
 
