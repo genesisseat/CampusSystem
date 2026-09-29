@@ -16,7 +16,7 @@ public sealed class LibraryDbService
     public LibraryDbService(IConfiguration config, ILogger<LibraryDbService> logger)
     {
         _connectionString = config.GetConnectionString("DefaultConnection")
-            ?? "Server=100.98.41.69;Port=3306;Database=mydb;Uid=myuser;Pwd=strongpassword;";
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
         _logger = logger;
     }
 
@@ -67,7 +67,8 @@ public sealed class LibraryDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Could not verify Library MySQL schema: {Message}. Running in resilient mode.", ex.Message);
+            _logger.LogError(ex, "Could not initialize the Library MySQL schema.");
+            throw;
         }
     }
 
@@ -98,8 +99,8 @@ public sealed class LibraryDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("GetStudentsAsync failed: {Message}", ex.Message);
-            return [];
+            _logger.LogError(ex, "Could not load students from the shared MySQL database.");
+            throw;
         }
     }
 
@@ -118,8 +119,8 @@ public sealed class LibraryDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("FindStudentIdByNumberAsync failed: {Message}", ex.Message);
-            return null;
+            _logger.LogError(ex, "Could not find student {StudentIdNumber} in the shared MySQL database.", studentIdNumber);
+            throw;
         }
     }
 
@@ -171,7 +172,7 @@ public sealed class LibraryDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("UpsertLibraryClearanceAsync failed: {Message}", ex.Message);
+            _logger.LogError(ex, "Could not update Library clearance for student {StudentId}.", studentId);
             return false;
         }
     }
@@ -224,7 +225,7 @@ public sealed class LibraryDbService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("UpdateLibraryAccountAsync failed: {Message}", ex.Message);
+            _logger.LogError(ex, "Could not update Library account for student {StudentId}.", studentId);
             return false;
         }
     }

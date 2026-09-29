@@ -2,7 +2,7 @@
 
 ## Current database state in this project
 
-The Library project configures a MySQL connection named `DefaultConnection` targeting the shared `mydb` database. `LibraryDbService.EnsureSchemaAsync` runs at startup and creates its bootstrap tables if they do not exist.
+The Library project requires the `ConnectionStrings__DefaultConnection` environment variable for MySQL access to shared database `mydb`. Credentials are not stored in this project's settings files. `LibraryDbService.EnsureSchemaAsync` runs at startup and creates its bootstrap tables if they do not exist.
 
 The Library pages remain UI placeholders. The database helper's account and clearance methods are not currently called by page handlers or controllers. Guidance request and refresh-token stores registered by the app remain in-memory scaffolding and are not Library circulation storage.
 

@@ -6,6 +6,7 @@ This reference describes Guidance's MySQL tables and its reads from the shared c
 
 - Connection name: `DefaultConnection`
 - Configured target: MySQL database `mydb`.
+- Supply it through the `ConnectionStrings__DefaultConnection` environment variable; credentials are not stored in this project's settings files.
 - Guidance uses the shared `user` table and creates its own tables with `GuidanceDbService.EnsureSchemaAsync` at startup.
 
 ## Tables

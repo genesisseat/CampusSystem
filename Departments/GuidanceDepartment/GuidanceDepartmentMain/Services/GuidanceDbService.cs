@@ -21,7 +21,7 @@ public sealed class GuidanceDbService : IGuidanceStudentDirectory
     public GuidanceDbService(IConfiguration config, ILogger<GuidanceDbService> logger)
     {
         _connectionString = config.GetConnectionString("DefaultConnection")
-            ?? "Server=100.98.41.69;Port=3306;Database=mydb;Uid=myuser;Pwd=strongpassword;";
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is required.");
         _logger = logger;
     }
 
@@ -96,7 +96,8 @@ public sealed class GuidanceDbService : IGuidanceStudentDirectory
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("Could not verify Guidance MySQL schema: {Message}. Running in resilient mode.", ex.Message);
+            _logger.LogError(ex, "Could not initialize the Guidance MySQL schema.");
+            throw;
         }
     }
 
@@ -128,8 +129,8 @@ public sealed class GuidanceDbService : IGuidanceStudentDirectory
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("GetStudentsAsync failed: {Message}", ex.Message);
-            return [];
+            _logger.LogError(ex, "Could not load students from the shared MySQL database.");
+            throw;
         }
     }
 
@@ -152,8 +153,8 @@ public sealed class GuidanceDbService : IGuidanceStudentDirectory
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("FindStudentByNumberAsync failed: {Message}", ex.Message);
-            return null;
+            _logger.LogError(ex, "Could not find student {StudentIdNumber} in the shared MySQL database.", studentIdNumber);
+            throw;
         }
     }
 
@@ -212,7 +213,7 @@ public sealed class GuidanceDbService : IGuidanceStudentDirectory
         }
         catch (Exception ex)
         {
-            _logger.LogWarning("UpsertGuidanceClearanceAsync failed: {Message}", ex.Message);
+            _logger.LogError(ex, "Could not update Guidance clearance for student {StudentId}.", studentId);
             return false;
         }
     }
