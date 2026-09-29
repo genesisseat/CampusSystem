@@ -1,25 +1,21 @@
 using AspNetCoreRateLimit;
-using CampusSystem.Sql;
 using FluentValidation;
 using GuidanceDepartmentMain.Contracts;
-using GuidanceDepartmentMain.Data;
 using GuidanceDepartmentMain.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
-    options.UseSqlServer(campusConnection));
-
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<GuidanceDbService>();
+builder.Services.AddSingleton<IGuidanceStudentDirectory>(services => services.GetRequiredService<GuidanceDbService>());
+builder.Services.AddSingleton<MySqlGuidancePersistenceStores>();
+builder.Services.AddSingleton<IGuidanceRequestStore>(services => services.GetRequiredService<MySqlGuidancePersistenceStores>());
+builder.Services.AddSingleton<IRefreshTokenStore>(services => services.GetRequiredService<MySqlGuidancePersistenceStores>());
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     var signingKey = builder.Configuration["Jwt:SigningKey"];
@@ -27,8 +23,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.Events = new JwtBearerEvents { OnMessageReceived = context => { context.Token = context.Request.Cookies["access_token"]; return Task.CompletedTask; } };
 });
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
-builder.Services.AddScoped<IGuidanceRequestStore, SqlGuidanceRequestStore>();
-builder.Services.AddScoped<IRefreshTokenStore, SqlRefreshTokenStore>();
 builder.Services.AddSingleton<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentRequestService, StudentRequestService>();
@@ -45,6 +39,8 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+await app.Services.GetRequiredService<GuidanceDbService>().EnsureSchemaAsync();
 
 // Configure the HTTP request pipeline.
 app.UseDefaultFiles();

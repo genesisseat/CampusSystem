@@ -1,20 +1,13 @@
-﻿using CampusSystem.Sql;
-using FluentValidation;
+﻿using FluentValidation;
 using LibraryMain.Contracts;
 using LibraryMain.Services;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var campusConnection = CampusSystemDbConnector.Resolve(
-    builder.Configuration.GetConnectionString(CampusSystemDbConnector.ConnectionStringName));
-
-builder.Services.AddDbContextFactory<DbContext>(options =>
-    options.UseSqlServer(campusConnection));
 
 // Add services to the container.
 // Guidance services
 builder.Services.AddControllers();
+builder.Services.AddSingleton<LibraryDbService>();
 builder.Services.AddValidatorsFromAssemblyContaining<StudentRequestValidator>();
 builder.Services.AddSingleton<IGuidanceRequestStore, InMemoryGuidanceRequestStore>();
 builder.Services.AddSingleton<IRefreshTokenStore, InMemoryRefreshTokenStore>();
@@ -29,6 +22,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
+
+await app.Services.GetRequiredService<LibraryDbService>().EnsureSchemaAsync();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

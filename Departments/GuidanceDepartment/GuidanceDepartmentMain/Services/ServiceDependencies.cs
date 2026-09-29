@@ -6,7 +6,7 @@ namespace GuidanceDepartmentMain.Services;
 public sealed class GuidanceRequestRecord
 {
     public Guid Id { get; init; }
-    public Guid StudentId { get; init; }
+    public int StudentId { get; init; }
     public string Subject { get; set; } = "";
     public string Details { get; set; } = "";
     public string? SafetyValveText { get; set; }
@@ -20,11 +20,11 @@ public sealed class GuidanceRequestRecord
 public interface IGuidanceRequestStore
 {
     Task<GuidanceRequestRecord?> FindAsync(Guid id, CancellationToken cancellationToken);
-    Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(Guid studentId, string key, CancellationToken cancellationToken);
-    Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(Guid? studentId, TriageFilter filter, CancellationToken cancellationToken);
+    Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(int studentId, string key, CancellationToken cancellationToken);
+    Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(int? studentId, TriageFilter filter, CancellationToken cancellationToken);
     Task AddAsync(GuidanceRequestRecord request, CancellationToken cancellationToken);
     Task SaveAsync(GuidanceRequestRecord request, byte[] expectedVersion, CancellationToken cancellationToken);
-    Task<bool> DeleteAsync(Guid id, Guid studentId, byte[] expectedVersion, CancellationToken cancellationToken);
+    Task<bool> DeleteAsync(Guid id, int studentId, byte[] expectedVersion, CancellationToken cancellationToken);
 }
 
 public interface IRefreshTokenStore
@@ -56,8 +56,8 @@ public sealed class InMemoryGuidanceRequestStore : IGuidanceRequestStore
     private readonly object sync = new();
     private readonly List<GuidanceRequestRecord> requests = [];
     public Task<GuidanceRequestRecord?> FindAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult(requests.FirstOrDefault(x => x.Id == id));
-    public Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(Guid studentId, string key, CancellationToken cancellationToken) => Task.FromResult(requests.FirstOrDefault(x => x.StudentId == studentId && x.IdempotencyKey == key));
-    public Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(Guid? studentId, TriageFilter filter, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<GuidanceRequestRecord>>(requests.Where(x => (!studentId.HasValue || x.StudentId == studentId) && (!filter.Status.HasValue || x.Status == filter.Status) && (!filter.Urgency.HasValue || x.Urgency == filter.Urgency) && (!filter.AssignedCounselorId.HasValue || x.AssignedCounselorId == filter.AssignedCounselorId)).ToList());
+    public Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(int studentId, string key, CancellationToken cancellationToken) => Task.FromResult(requests.FirstOrDefault(x => x.StudentId == studentId && x.IdempotencyKey == key));
+    public Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(int? studentId, TriageFilter filter, CancellationToken cancellationToken) => Task.FromResult<IReadOnlyList<GuidanceRequestRecord>>(requests.Where(x => (!studentId.HasValue || x.StudentId == studentId) && (!filter.Status.HasValue || x.Status == filter.Status) && (!filter.Urgency.HasValue || x.Urgency == filter.Urgency) && (!filter.AssignedCounselorId.HasValue || x.AssignedCounselorId == filter.AssignedCounselorId)).ToList());
     public Task AddAsync(GuidanceRequestRecord request, CancellationToken cancellationToken) { lock (sync) requests.Add(request); return Task.CompletedTask; }
     public Task SaveAsync(GuidanceRequestRecord request, byte[] expectedVersion, CancellationToken cancellationToken)
     {
@@ -69,7 +69,7 @@ public sealed class InMemoryGuidanceRequestStore : IGuidanceRequestStore
         }
         return Task.CompletedTask;
     }
-    public Task<bool> DeleteAsync(Guid id, Guid studentId, byte[] expectedVersion, CancellationToken cancellationToken)
+    public Task<bool> DeleteAsync(Guid id, int studentId, byte[] expectedVersion, CancellationToken cancellationToken)
     {
         lock (sync)
         {

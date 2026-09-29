@@ -12,13 +12,13 @@ public sealed class SqlGuidanceRequestStore(IDbContextFactory<GuidanceDbContext>
         return await context.GuidanceRequests.FindAsync([id], cancellationToken);
     }
 
-    public async Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(Guid studentId, string key, CancellationToken cancellationToken)
+    public async Task<GuidanceRequestRecord?> FindByIdempotencyKeyAsync(int studentId, string key, CancellationToken cancellationToken)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         return await context.GuidanceRequests.FirstOrDefaultAsync(x => x.StudentId == studentId && x.IdempotencyKey == key, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(Guid? studentId, TriageFilter filter, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<GuidanceRequestRecord>> ListAsync(int? studentId, TriageFilter filter, CancellationToken cancellationToken)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var query = context.GuidanceRequests.AsQueryable();
@@ -50,7 +50,7 @@ public sealed class SqlGuidanceRequestStore(IDbContextFactory<GuidanceDbContext>
         }
     }
 
-    public async Task<bool> DeleteAsync(Guid id, Guid studentId, byte[] expectedVersion, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(Guid id, int studentId, byte[] expectedVersion, CancellationToken cancellationToken)
     {
         await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var request = await context.GuidanceRequests.FindAsync([id], cancellationToken);

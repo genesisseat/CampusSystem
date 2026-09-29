@@ -9,7 +9,7 @@ Library owns catalog, circulation, fines, and reservation interfaces in this pro
 Use the task type to decide the correct layer:
 
 - Front-end / interface work: edit only Razor Pages in `Pages/`, the shared layout in `Pages/Shared/_Layout.cshtml`, and styling in `wwwroot/css/site.css`. Adjust labels, cards, tables, and mock state without enabling actual circulation behavior.
-- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, models, DTOs, `Program.cs`, and related server files only when the task explicitly requires catalog, checkout, fines, or reservation logic.
+- Back-end / data work: edit `Controllers/`, `Services/`, `Contracts/`, models, DTOs, `Program.cs`, and related server files when the task explicitly requires catalog, checkout, fines, or reservation logic.
 - AI model rule: if the request does not clearly ask for backend logic, assume it is a UI edit and do not add database writes, inventory updates, or live service calls.
 
 ## AI maintenance manual
@@ -52,7 +52,7 @@ Before making a change in a future session, read this file first and compare it 
 
 ## Interface-only editing guidance
 
-This project is intended to present library workflows without backend data access. When asked to update the interface, keep the task limited to the front-end presentation layer.
+The Library pages remain presentation placeholders. `LibraryDbService` now connects to shared MySQL `mydb`, bootstraps `library_accounts` and `student_clearance`, and exposes student/account/clearance operations. Those operations are not yet wired into the pages; catalog, loans, reservations, and fine workflows remain unimplemented. When asked only to update the interface, keep the task limited to the front-end presentation layer.
 
 ### Files to edit for UI changes
 
@@ -67,7 +67,7 @@ This project is intended to present library workflows without backend data acces
 - No database-backed fine calculations
 - No live reservation persistence or service calls
 - No external API calls tied to real circulation data
-- A shared campus database (`CampusSystemDb`) exists, along with a shared `Student` identity model in `CampusSystem.Data`. When this department's persistence is built, it gets its own `LibraryDbContext`, its own models, and its own migration history inside this project — following the pattern already used by Registrar. Do not add a `DbSet` for this department's tables into `CampusSystem.Data` or into another department's context.
+- Use the shared MySQL `mydb` database and numeric `user.id` for cross-department student identity. Keep Library-owned tables and persistence code in this project; do not add Library tables to another department's context.
 - Direct calls into another department's controllers, services, or API endpoints remain unapproved.
 
 ### Approved UI behavior

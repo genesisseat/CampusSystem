@@ -1,53 +1,51 @@
 # Guidance Department Database Tables
 
-This reference describes the Guidance department's SQL Server EF Core model and migration snapshot.
+This reference describes Guidance's MySQL tables and its reads from the shared campus database.
 
 ## Database connection
 
-- Connection name: `CampusSystemDb`
-- Configured target: SQL Server at `localhost,1433`, database `CampusSystemDb`.
-- Guidance-owned tables are in the `guidance` schema. The shared student table is in `dbo`.
+- Connection name: `DefaultConnection`
+- Configured target: MySQL database `mydb`.
+- Guidance uses the shared `user` table and creates its own tables with `GuidanceDbService.EnsureSchemaAsync` at startup.
 
 ## Tables
 
-### `dbo.Students`
+### Shared `user`
 
-| Column | SQL Server type | Notes |
+| Column | MySQL type | Notes |
 |---|---|---|
-| Id | uniqueidentifier | Primary key |
-| StudentNumber | nvarchar(max) | Student number |
-| FullName | nvarchar(max) | Full name |
-| Email | nvarchar(max) | Email address |
+| id | int | Shared numeric student identity |
+| student_id_number | varchar | Student number |
+| name | varchar | Full name |
+| email | varchar | Email address |
 
-### `guidance.GuidanceRequests`
+### `guidance_requests`
 
-| Column | SQL Server type | Notes |
+| Column | MySQL type | Notes |
 |---|---|---|
-| Id | uniqueidentifier | Primary key |
-| StudentId | uniqueidentifier | Student identity |
-| Subject | nvarchar(max) | Required request subject |
-| Details | nvarchar(max) | Required request details |
-| SafetyValveText | nvarchar(max), nullable | Optional safety text |
-| Urgency | int | `RequestUrgency` enum value |
-| Status | int | `RequestStatus` enum value |
-| AssignedCounselorId | uniqueidentifier, nullable | Optional assigned counselor |
-| IdempotencyKey | nvarchar(max), nullable | Request de-duplication key |
-| RowVersion | varbinary(max) | Concurrency value |
+| id | char(36) | Primary key |
+| student_id | int | References shared `user.id` by convention |
+| subject, details | varchar / text | Request content |
+| safety_valve_text | text, nullable | Optional safety text |
+| urgency, status | int | Enum values |
+| assigned_counselor_id | char(36), nullable | Optional assigned counselor |
+| idempotency_key | varchar(191), nullable | Unique per student when provided |
+| row_version | binary(8) | Optimistic concurrency value |
 
-### `guidance.RefreshTokens`
+### `refresh_tokens`
 
-| Column | SQL Server type | Notes |
+| Column | MySQL type | Notes |
 |---|---|---|
-| Token | nvarchar(450) | Primary key |
-| Subject | nvarchar(max) | Token subject |
-| ExpiresAt | datetimeoffset | Expiry timestamp |
+| token | varchar(128) | Primary key |
+| subject | varchar(255) | Token subject |
+| expires_at | datetime(6) | Expiry timestamp |
 
-## Relationships
+### Other Guidance tables
 
-- `GuidanceRequests.StudentId` identifies a student in `dbo.Students`; the current EF model does not configure a foreign-key constraint.
-- `RefreshTokens` is keyed by `Token`.
+- `guidance_notes` and `guidance_appointments` are created at startup for Guidance-owned records.
+- `student_clearance` is shared and is not created by Guidance.
 
 ## Notes
 
-- These are the current EF Core mappings and migration snapshot; see `Data/GuidanceDbContext.cs` and `Migrations/GuidanceDbContextModelSnapshot.cs`.
-- The configured SQL Server service must be reachable at the connection string target for these persistent tables to be available.
+- Schema creation is best-effort at startup; database errors are logged and the app continues running.
+- Student identifiers in shared workflows use integer `user.id`, not a department-local GUID.

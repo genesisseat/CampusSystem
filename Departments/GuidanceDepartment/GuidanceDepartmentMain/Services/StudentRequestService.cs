@@ -8,7 +8,7 @@ namespace GuidanceDepartmentMain.Services;
 public sealed class StudentRequestService(IGuidanceRequestStore store, IValidator<StudentRequestDto> validator)
     : IStudentRequestService
 {
-    public async Task<ServiceResult<StudentRequestResponse>> CreateAsync(Guid studentId, StudentRequestDto request, string idempotencyKey, CancellationToken cancellationToken)
+    public async Task<ServiceResult<StudentRequestResponse>> CreateAsync(int studentId, StudentRequestDto request, string idempotencyKey, CancellationToken cancellationToken)
     {
         var validation = await validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid) return ServiceResult<StudentRequestResponse>.Fail("validation", string.Join("; ", validation.Errors.Select(x => x.ErrorMessage)));
@@ -20,13 +20,13 @@ public sealed class StudentRequestService(IGuidanceRequestStore store, IValidato
         return ServiceResult<StudentRequestResponse>.Ok(ToResponse(record));
     }
 
-    public async Task<ServiceResult<StudentRequestResponse>> GetAsync(Guid studentId, Guid requestId, CancellationToken cancellationToken)
+    public async Task<ServiceResult<StudentRequestResponse>> GetAsync(int studentId, Guid requestId, CancellationToken cancellationToken)
     {
         var request = await store.FindAsync(requestId, cancellationToken);
         return request is null || request.StudentId != studentId ? ServiceResult<StudentRequestResponse>.Fail("not_found", "Request not found.") : ServiceResult<StudentRequestResponse>.Ok(ToResponse(request));
     }
 
-    public async Task<ServiceResult<StudentRequestResponse>> UpdateAsync(Guid studentId, Guid requestId, StudentRequestDto input, byte[] rowVersion, CancellationToken cancellationToken)
+    public async Task<ServiceResult<StudentRequestResponse>> UpdateAsync(int studentId, Guid requestId, StudentRequestDto input, byte[] rowVersion, CancellationToken cancellationToken)
     {
         var request = await store.FindAsync(requestId, cancellationToken);
         if (request is null || request.StudentId != studentId) return ServiceResult<StudentRequestResponse>.Fail("not_found", "Request not found.");
@@ -37,7 +37,7 @@ public sealed class StudentRequestService(IGuidanceRequestStore store, IValidato
         catch (DbUpdateConcurrencyException) { return ServiceResult<StudentRequestResponse>.Fail("conflict", "Request changed; please refresh."); }
     }
 
-    public async Task<ServiceResult<bool>> DeleteAsync(Guid studentId, Guid requestId, byte[] rowVersion, CancellationToken cancellationToken)
+    public async Task<ServiceResult<bool>> DeleteAsync(int studentId, Guid requestId, byte[] rowVersion, CancellationToken cancellationToken)
     {
         var request = await store.FindAsync(requestId, cancellationToken);
         if (request is null || request.StudentId != studentId) return ServiceResult<bool>.Fail("not_found", "Request not found.");

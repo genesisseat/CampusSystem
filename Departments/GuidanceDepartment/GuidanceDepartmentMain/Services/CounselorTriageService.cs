@@ -21,7 +21,7 @@ public sealed class CounselorTriageService(IGuidanceRequestStore store, IAuditLo
 
     public async Task<ServiceResult<StudentRequestResponse>> ProcessIncomingReferralAsync(IncomingReferralDto referral, CancellationToken cancellationToken)
     {
-        if (referral.StudentId == Guid.Empty) return ServiceResult<StudentRequestResponse>.Fail("validation", "StudentId is required.");
+        if (referral.StudentId <= 0) return ServiceResult<StudentRequestResponse>.Fail("validation", "A valid StudentId is required.");
         if (string.IsNullOrWhiteSpace(referral.ReferralReason)) return ServiceResult<StudentRequestResponse>.Fail("validation", "ReferralReason is required.");
         if (string.IsNullOrWhiteSpace(referral.OriginatingDeptCode)) return ServiceResult<StudentRequestResponse>.Fail("validation", "OriginatingDeptCode is required.");
 

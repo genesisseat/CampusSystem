@@ -25,6 +25,6 @@ public record RedactionRules(bool Emails = true, bool PhoneNumbers = true, bool 
 
 public static class ClaimsPrincipalExtensions
 {
-    public static Guid? GetStudentId(this ClaimsPrincipal principal) =>
-        Guid.TryParse(principal.FindFirstValue("StudentId"), out var id) ? id : null;
+    public static int? GetStudentId(this ClaimsPrincipal principal) =>
+        int.TryParse(principal.FindFirstValue("StudentId"), out var id) ? id : null;
 }

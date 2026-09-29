@@ -20,7 +20,7 @@ public sealed class AuthService(IConfiguration configuration, IRefreshTokenStore
         return await IssueAsync("refresh-subject", "Student", response, cancellationToken);
     }
 
-    public Guid? GetStudentId(ClaimsPrincipal principal) => principal.GetStudentId();
+    public int? GetStudentId(ClaimsPrincipal principal) => principal.GetStudentId();
 
     private async Task<ServiceResult<AuthResponse>> IssueAsync(string subject, string role, HttpResponse response, CancellationToken cancellationToken)
     {

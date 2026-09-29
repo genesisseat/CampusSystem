@@ -1,11 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using CampusSystem.Data.Models;
 using FluentValidation;
 using GuidanceDepartmentMain.Contracts;
-using GuidanceDepartmentMain.Data;
 using GuidanceDepartmentMain.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -23,8 +22,8 @@ public sealed class ServiceTests
     {
         var store = new InMemoryGuidanceRequestStore();
         var service = new StudentRequestService(store, new StudentRequestValidator());
-        var created = await service.CreateAsync(Guid.NewGuid(), Input, "one", CancellationToken.None);
-        var result = await service.GetAsync(Guid.NewGuid(), created.Value!.Id, CancellationToken.None);
+        var created = await service.CreateAsync(101, Input, "one", CancellationToken.None);
+        var result = await service.GetAsync(102, created.Value!.Id, CancellationToken.None);
         Assert.False(result.Succeeded);
         Assert.Equal("not_found", result.ErrorCode);
     }
@@ -32,7 +31,7 @@ public sealed class ServiceTests
     [Fact]
     public async Task Create_replays_duplicate_idempotency_key()
     {
-        var store = new InMemoryGuidanceRequestStore(); var service = new StudentRequestService(store, new StudentRequestValidator()); var student = Guid.NewGuid();
+        var store = new InMemoryGuidanceRequestStore(); var service = new StudentRequestService(store, new StudentRequestValidator()); const int student = 101;
         var first = await service.CreateAsync(student, Input, "same", CancellationToken.None); var second = await service.CreateAsync(student, Input with { Subject = "Different" }, "same", CancellationToken.None);
         Assert.Equal(first.Value!.Id, second.Value!.Id); Assert.Equal("&lt;script&gt;alert(1)&lt;/script&gt;", first.Value.SafetyValveText);
     }
@@ -66,7 +65,7 @@ public sealed class ServiceTests
     [Fact]
     public async Task Incoming_referral_is_processed_by_triage_service()
     {
-        var studentId = Guid.NewGuid();
+        const int studentId = 101;
         var store = new Mock<IGuidanceRequestStore>();
         var audit = new Mock<IAuditLogService>();
         store.Setup(x => x.AddAsync(It.IsAny<GuidanceRequestRecord>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -90,7 +89,7 @@ public sealed class ServiceTests
     public async Task Guidance_student_feed_returns_live_student_rows()
     {
         var controller = new GuidanceDepartmentMain.Controllers.GuidanceStudentController(
-            new TestDbContextFactory(),
+            new TestGuidanceStudentDirectory(),
             new CounselorTriageService(new InMemoryGuidanceRequestStore(), new AuditLogService()));
 
         var result = await controller.GetStudents(CancellationToken.None);
@@ -110,23 +109,16 @@ public sealed class ServiceTests
         transport.Verify(x => x.SendAsync(It.IsAny<NotificationMessage>(), It.IsAny<CancellationToken>()), Times.AtLeast(2)); audit.Verify(x => x.AppendAsync(It.IsAny<AuditEvent>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    private sealed class TestDbContextFactory : IDbContextFactory<GuidanceDbContext>
+    private sealed class TestGuidanceStudentDirectory : IGuidanceStudentDirectory
     {
-        public GuidanceDbContext CreateDbContext()
+        public Task<IReadOnlyList<GuidanceDbService.StudentRow>> GetStudentsAsync()
         {
-            var options = new DbContextOptionsBuilder<GuidanceDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
-                .Options;
-
-            var context = new GuidanceDbContext(options);
-            context.Students.AddRange(
-                new Student { Id = Guid.NewGuid(), StudentNumber = "1042", FullName = "Alicia Smith", Email = "alicia.smith@example.edu" },
-                new Student { Id = Guid.NewGuid(), StudentNumber = "1077", FullName = "Maya Chen", Email = "maya.chen@example.edu" });
-            context.SaveChanges();
-            return context;
+            IReadOnlyList<GuidanceDbService.StudentRow> students =
+            [
+                new(1042, "1042", "Alicia Smith", "alicia.smith@example.edu"),
+                new(1077, "1077", "Maya Chen", "maya.chen@example.edu")
+            ];
+            return Task.FromResult(students);
         }
-
-        public ValueTask<GuidanceDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
-            => new(CreateDbContext());
     }
 }

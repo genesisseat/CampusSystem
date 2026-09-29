@@ -2,19 +2,35 @@
 
 ## Current database state in this project
 
-The Library project configures a SQL Server connection named `CampusSystemDb`, targeting `localhost,1433` and database `CampusSystemDb`. However, the current Library application does not define Library-specific EF Core entities, migrations, or a Library database context/table mapping.
+The Library project configures a MySQL connection named `DefaultConnection` targeting the shared `mydb` database. `LibraryDbService.EnsureSchemaAsync` runs at startup and creates its bootstrap tables if they do not exist.
 
-The registered guidance request and refresh-token stores are in-memory implementations. Although SQL persistence classes exist in the project, `Program.cs` currently registers the in-memory stores, so those SQL tables are not the active persistence path for Library.
+The Library pages remain UI placeholders. The database helper's account and clearance methods are not currently called by page handlers or controllers. Guidance request and refresh-token stores registered by the app remain in-memory scaffolding and are not Library circulation storage.
 
 ## Tables
 
-No Library-owned database tables are defined by the current project source. Do not infer a `Books`, `Loans`, or `Reservations` table from the department name; a live schema inspection is required to determine whether such tables exist in the configured database.
+### `library_accounts`
+
+| Column | MySQL type | Notes |
+|---|---|---|
+| id | int | Auto-increment primary key |
+| student_id | int | Shared `user.id`; unique per account |
+| has_overdue | tinyint(1) | Overdue indicator |
+| fine_amount | decimal(10,2) | Current fine balance |
+| fine_paid | tinyint(1) | Whether the fine is paid |
+| updated_at | datetime | Updated automatically |
+
+### Shared `student_clearance`
+
+Library bootstrap creates this table if absent, with a unique key on student, department, school year, and semester. Finance and Student Portal also use this shared table; confirm their deployed schema before applying incompatible schema changes.
+
+No `library_books`, `book_loans`, or `library_reservations` table is currently defined. Do not infer live catalog or circulation persistence from the placeholder pages.
 
 ## Shared services
 
-The project contains shared guidance service models, but they are not currently persisted by the Library app's DI configuration. The SQL Server connection factory alone does not establish a Library-owned schema.
+`LibraryDbService` reads student identities from the shared `user` table and provides methods for Library account and clearance writes. These methods are not yet connected to the page workflows; there is no live catalog, loan, reservation, or fine-payment flow.
 
 ## Source references
 
-- `Program.cs` configures the SQL Server connection and registers in-memory guidance stores.
-- `appsettings.json` contains the `CampusSystemDb` target.
+- `Program.cs` configures the MySQL service and invokes its best-effort schema bootstrap.
+- `LibraryDbService.cs` defines the bootstrap tables and currently unused data methods.
+- `appsettings.json` contains the `DefaultConnection` target for `mydb`.
