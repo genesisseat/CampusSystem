@@ -1,0 +1,83 @@
+[
+  {
+    "Id": 1,
+    "StudentIdNumber": "EMP-REG-001",
+    "Name": "Dr. Rosalinda Santos",
+    "Email": "rosalinda.santos@campus.edu",
+    "Role": "registrar",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 2,
+    "StudentIdNumber": "EMP-FAC-001",
+    "Name": "Prof. Alan Turing",
+    "Email": "alan.turing@campus.edu",
+    "Role": "faculty",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 3,
+    "StudentIdNumber": "EMP-FAC-002",
+    "Name": "Engr. Ada Lovelace",
+    "Email": "ada.lovelace@campus.edu",
+    "Role": "faculty",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 4,
+    "StudentIdNumber": "EMP-FIN-001",
+    "Name": "Roberto Cruz",
+    "Email": "roberto.cruz@campus.edu",
+    "Role": "finance",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 5,
+    "StudentIdNumber": "2024-00101",
+    "Name": "Alyssa Bea Mendoza",
+    "Email": "alyssa.mendoza@student.campus.edu",
+    "Role": "student",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 6,
+    "StudentIdNumber": "2024-00102",
+    "Name": "John Daniel Reyes",
+    "Email": "john.reyes@student.campus.edu",
+    "Role": "student",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 7,
+    "StudentIdNumber": "2024-00103",
+    "Name": "Maria Clara Santos",
+    "Email": "maria.santos@student.campus.edu",
+    "Role": "student",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 8,
+    "StudentIdNumber": "2024-00104",
+    "Name": "Renzo Aguilar",
+    "Email": "renzo.aguilar@student.campus.edu",
+    "Role": "student",
+    "Status": "active",
+    "AvatarUrl": ""
+  },
+  {
+    "Id": 9,
+    "StudentIdNumber": "EMP-GDC-001",
+    "Name": "Dr. Patricia Gomez",
+    "Email": "patricia.gomez@campus.edu",
+    "Role": "guidance",
+    "Status": "active",
+    "AvatarUrl": ""
+  }
+]

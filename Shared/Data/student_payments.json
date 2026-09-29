@@ -1,0 +1,16 @@
+[
+  {
+    "Id": 1,
+    "ReceiptNo": "OR-2026-00101",
+    "FeeAssessmentId": 1,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "Amount": 36000,
+    "PaymentMethod": "Online Banking",
+    "ReferenceNumber": "PAY-REF-98124",
+    "PayDate": "2026-09-21T03:05:35.9854526Z",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester"
+  }
+]

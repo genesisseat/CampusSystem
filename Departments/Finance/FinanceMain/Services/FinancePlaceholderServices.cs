@@ -477,120 +477,231 @@ public sealed class FinanceDataStore
         a.Items);
 }
 
-// ─── Active Services using FinanceDataStore ─────────────────────────────────
+// ─── Active Services using FinanceDbService (Real MySQL with Fallback) ───────
 
-public sealed class ActiveAssessmentService(FinanceDataStore store) : IAssessmentService
+public sealed class ActiveAssessmentService(FinanceDbService db, FinanceDataStore store) : IAssessmentService
 {
-    public Task<AssessmentListResult> ListAsync(AssessmentListFilter filter) =>
-        Task.FromResult(store.GetAssessments(filter));
+    public async Task<AssessmentListResult> ListAsync(AssessmentListFilter filter)
+    {
+        var dbRows = await db.GetAllAssessmentsFromDbAsync(filter.Status, filter.SearchText);
+        if (dbRows.Count > 0)
+        {
+            var paged = dbRows
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(r => new FeeAssessmentDto(
+                    r.Id,
+                    r.AssessmentNumber,
+                    r.StudentName,
+                    r.StudentNumber,
+                    r.Program,
+                    r.SchoolYear,
+                    r.Semester,
+                    r.TotalAmount,
+                    r.TotalPaid,
+                    r.Balance,
+                    r.Status,
+                    r.CreatedAt,
+                    new List<FeeAssessmentItemDto>
+                    {
+                        new("Tuition Fee", Math.Max(0, r.TotalAmount - 4500.00m), Math.Min(Math.Max(0, r.TotalAmount - 4500.00m), r.TotalPaid)),
+                        new("Miscellaneous & Tech Fee", 4500.00m, Math.Max(0, r.TotalPaid - Math.Max(0, r.TotalAmount - 4500.00m)))
+                    }))
+                .ToList();
+            return new AssessmentListResult(dbRows.Count, paged);
+        }
+        return store.GetAssessments(filter);
+    }
 
-    public Task<FeeAssessmentDto?> GetByIdAsync(int id) =>
-        Task.FromResult(store.GetAssessmentById(id));
+    public async Task<FeeAssessmentDto?> GetByIdAsync(int id)
+    {
+        var item = await db.GetAssessmentByIdFromDbAsync(id);
+        return item ?? store.GetAssessmentById(id);
+    }
 
-    public Task<FeeAssessmentDto?> GetCurrentForStudentAsync(Guid studentId, string academicYear, string semester) =>
-        Task.FromResult(store.GetCurrentAssessmentForStudent(studentId, academicYear, semester));
+    public async Task<FeeAssessmentDto?> GetCurrentForStudentAsync(Guid studentId, string academicYear, string semester)
+    {
+        var item = await db.GetCurrentAssessmentForStudentFromDbAsync(studentId, academicYear, semester);
+        return item ?? store.GetCurrentAssessmentForStudent(studentId, academicYear, semester);
+    }
 
     public Task<EnrolleeAssessmentResult> AssessEnrolleeAsync(EnrolleeAssessmentRequest request) =>
         Task.FromResult(store.AssessEnrollee(request));
 }
 
-public sealed class ActivePaymentService(FinanceDataStore store, FinanceDbService? db = null) : IPaymentService
+public sealed class ActivePaymentService(FinanceDbService db, FinanceDataStore store) : IPaymentService
 {
-    public Task<PaymentListResult> ListAsync(PaymentListFilter filter) =>
-        Task.FromResult(store.GetPayments(filter));
+    public async Task<PaymentListResult> ListAsync(PaymentListFilter filter)
+    {
+        var dbRows = await db.GetAllPaymentsFromDbAsync(filter.SearchText);
+        if (dbRows.Count > 0)
+        {
+            var paged = dbRows
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(p => new PaymentRowDto(
+                    p.PaymentNumber,
+                    p.PaymentDate,
+                    p.AmountPaid,
+                    p.PaymentMethod,
+                    p.PaymentNumber,
+                    p.Status,
+                    p.StudentDisplayName,
+                    p.Program,
+                    p.FeeAssessmentId,
+                    p.AssessmentNumber))
+                .ToList();
+            return new PaymentListResult(dbRows.Count, paged);
+        }
+        return store.GetPayments(filter);
+    }
 
-    public Task<IReadOnlyList<PaymentHistoryEntryDto>> GetPaymentHistoryForStudentAsync(Guid studentId) =>
-        Task.FromResult(store.GetPaymentHistoryForStudent(studentId));
+    public async Task<IReadOnlyList<PaymentHistoryEntryDto>> GetPaymentHistoryForStudentAsync(Guid studentId)
+    {
+        var dbRows = await db.GetAllPaymentsFromDbAsync();
+        byte[] bytes = studentId.ToByteArray();
+        int intId = BitConverter.ToInt32(bytes, 0);
+        var filtered = dbRows.Where(p => p.FeeAssessmentId == intId).ToList();
+        if (filtered.Count > 0)
+        {
+            return filtered.Select(p => new PaymentHistoryEntryDto(
+                p.PaymentNumber,
+                p.PaymentDate,
+                p.AmountPaid,
+                p.PaymentMethod,
+                p.PaymentNumber,
+                p.Status)).ToList();
+        }
+        return store.GetPaymentHistoryForStudent(studentId);
+    }
 
     public async Task<PaymentRecordDto> RecordPaymentAsync(RecordPaymentRequest request)
     {
         var record = store.RecordPayment(request);
-        if (db != null)
+        try
         {
-            try
-            {
-                var asm = store.GetAssessmentById(request.FeeAssessmentId);
-                var isSettled = asm != null && asm.Balance <= 0;
-                await db.RecordSharedPaymentAsync(
-                    asm?.StudentNumber ?? "2024-00192",
-                    asm?.StudentDisplayName ?? "Student",
-                    record.PaymentNumber,
-                    record.AmountPaid,
-                    record.PaymentMethod,
-                    $"Tuition Payment for Assessment {asm?.AssessmentNumber ?? "NUL"}",
-                    isSettled);
-            }
-            catch
-            {
-                // Graceful degradation
-            }
+            var asm = await db.GetAssessmentByIdFromDbAsync(request.FeeAssessmentId)
+                      ?? store.GetAssessmentById(request.FeeAssessmentId);
+            var isSettled = asm != null && asm.Balance <= 0;
+            await db.RecordSharedPaymentAsync(
+                asm?.StudentNumber ?? "2024-00192",
+                asm?.StudentDisplayName ?? "Student",
+                record.PaymentNumber,
+                record.AmountPaid,
+                record.PaymentMethod,
+                $"Tuition Payment for Assessment {asm?.AssessmentNumber ?? "NUL"}",
+                isSettled);
+        }
+        catch
+        {
+            // Graceful degradation
         }
         return record;
     }
 
-    public Task<PaymentRowDto?> GetPaymentByNumberAsync(string paymentNumber) =>
-        Task.FromResult(store.GetPaymentByNumber(paymentNumber));
+    public async Task<PaymentRowDto?> GetPaymentByNumberAsync(string paymentNumber)
+    {
+        var item = await db.GetPaymentByNumberFromDbAsync(paymentNumber);
+        return item ?? store.GetPaymentByNumber(paymentNumber);
+    }
 }
 
-public sealed class ActiveClearanceService(FinanceDataStore store, FinanceDbService? db = null) : IClearanceService
+public sealed class ActiveClearanceService(FinanceDbService db, FinanceDataStore store) : IClearanceService
 {
-    public Task<ClearanceSummaryDto> GetSummaryAsync(string academicYear, string semester) =>
-        Task.FromResult(store.GetClearanceSummary());
+    public async Task<ClearanceSummaryDto> GetSummaryAsync(string academicYear, string semester)
+    {
+        var dbRows = await db.GetAllClearancesFromDbAsync();
+        if (dbRows.Count > 0)
+        {
+            int cleared = dbRows.Count(r => string.Equals(r.Status, "Cleared", StringComparison.OrdinalIgnoreCase));
+            int cond = dbRows.Count(r => string.Equals(r.Status, "Conditional", StringComparison.OrdinalIgnoreCase));
+            int notCleared = Math.Max(0, dbRows.Count - cleared - cond);
+            return new ClearanceSummaryDto(dbRows.Count, cleared, cond, notCleared);
+        }
+        return store.GetClearanceSummary();
+    }
 
-    public Task<ClearanceListResult> ListAsync(ClearanceListFilter filter) =>
-        Task.FromResult(store.GetClearances(filter));
+    public async Task<ClearanceListResult> ListAsync(ClearanceListFilter filter)
+    {
+        var dbRows = await db.GetAllClearancesFromDbAsync(filter.Status, filter.SearchText);
+        if (dbRows.Count > 0)
+        {
+            var paged = dbRows
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(r => new ClearanceRecordDto(
+                    r.Id,
+                    r.StudentName,
+                    r.Program,
+                    r.Assessed,
+                    r.Balance,
+                    r.Status,
+                    r.ClearedOn))
+                .ToList();
+            return new ClearanceListResult(dbRows.Count, paged);
+        }
+        return store.GetClearances(filter);
+    }
 
     public async Task SetConditionalAsync(int clearanceId, SetConditionalRequest request)
     {
         store.SetConditional(clearanceId, request.Remarks);
-        if (db != null)
+        try
         {
-            try
+            var list = await db.GetAllClearancesFromDbAsync();
+            var c = list.FirstOrDefault(x => x.Id == clearanceId || x.StudentId == clearanceId);
+            if (c != null)
             {
-                var list = store.GetClearances(new ClearanceListFilter("2026-2027", "1st Semester", null, null, 1, 100));
-                var c = list.Items.FirstOrDefault(x => x.Id == clearanceId);
-                if (c != null)
-                {
-                    await db.UpdateClearanceStatusAsync(c.StudentDisplayName, "Conditional", request.Remarks ?? "Conditional clearance");
-                }
+                await db.UpdateClearanceStatusAsync(c.StudentNumber, "Conditional", request.Remarks ?? "Conditional clearance");
             }
-            catch
-            {
-                // Graceful degradation
-            }
+        }
+        catch
+        {
+            // Graceful degradation
         }
     }
 
-    public Task<IReadOnlyList<StudentClearanceDto>> GetForStudentsAsync(IReadOnlyCollection<Guid> studentIds, string academicYear, string semester) =>
-        Task.FromResult(store.GetStudentClearances(studentIds));
+    public async Task<IReadOnlyList<StudentClearanceDto>> GetForStudentsAsync(IReadOnlyCollection<Guid> studentIds, string academicYear, string semester)
+    {
+        var dbRows = await db.GetAllClearancesFromDbAsync();
+        if (dbRows.Count > 0)
+        {
+            var result = new List<StudentClearanceDto>();
+            foreach (var guid in studentIds)
+            {
+                byte[] bytes = guid.ToByteArray();
+                int intId = BitConverter.ToInt32(bytes, 0);
+                var row = dbRows.FirstOrDefault(r => r.StudentId == intId);
+                result.Add(new StudentClearanceDto(guid, row?.Status ?? "Cleared"));
+            }
+            return result;
+        }
+        return store.GetStudentClearances(studentIds);
+    }
 
-    public Task<StudentClearanceDto?> GetStatusAsync(Guid studentId, string academicYear, string semester) =>
-        Task.FromResult(store.GetStudentClearance(studentId));
+    public async Task<StudentClearanceDto?> GetStatusAsync(Guid studentId, string academicYear, string semester)
+    {
+        var dbRows = await db.GetAllClearancesFromDbAsync();
+        byte[] bytes = studentId.ToByteArray();
+        int intId = BitConverter.ToInt32(bytes, 0);
+        var row = dbRows.FirstOrDefault(r => r.StudentId == intId);
+        if (row != null)
+        {
+            return new StudentClearanceDto(studentId, row.Status);
+        }
+        return store.GetStudentClearance(studentId);
+    }
 
     public async Task<int> BatchIssueAsync(string academicYear, string semester)
     {
-        var count = store.BatchIssueClearance(academicYear, semester);
-        if (db != null)
+        var dbRows = await db.GetAllClearancesFromDbAsync();
+        int count = 0;
+        foreach (var r in dbRows.Where(r => r.Balance <= 0))
         {
-            try
-            {
-                var clearedList = store.GetClearances(new ClearanceListFilter(academicYear, semester, "Cleared", null, 1, 100));
-                var asmList = store.GetAssessments(new AssessmentListFilter(academicYear, semester, null, null, 1, 100));
-                foreach (var item in clearedList.Items)
-                {
-                    var asm = asmList.Items.FirstOrDefault(a => a.StudentDisplayName == item.StudentDisplayName);
-                    if (asm != null)
-                    {
-                        await db.UpdateClearanceStatusAsync(asm.StudentNumber, "Cleared", "Full matriculation cleared & settled");
-                    }
-                }
-            }
-            catch
-            {
-                // Graceful degradation
-            }
+            await db.UpdateClearanceStatusAsync(r.StudentNumber, "Cleared", "Full matriculation cleared & settled");
+            count++;
         }
-        return count;
+        return count > 0 ? count : store.BatchIssueClearance(academicYear, semester);
     }
 }
 
@@ -618,26 +729,21 @@ public sealed class ActiveRequestService(FinanceDataStore store) : IRequestServi
         Task.FromResult(store.GetRequests());
 }
 
-public sealed class RegistrarClassRosterProvider : IClassRosterProvider
+public sealed class RegistrarClassRosterProvider(FinanceDbService db) : IClassRosterProvider
 {
-    public Task<ClassRosterDto?> GetRosterAsync(string sectionId)
+    public async Task<ClassRosterDto?> GetRosterAsync(string sectionId)
     {
-        var roster = new ClassRosterDto(
-            SectionLabel: $"{sectionId} · MWF 8:00–9:30 · Room 402",
-            Students:
-            [
-                new(FinanceDataStore.RenzoAguilarId, "Aguilar, Renzo Martin P.", "2023-00801"),
-                new(FinanceDataStore.CelineBautistaId, "Bautista, Celine Joy A.", "2023-00815"),
-                new(FinanceDataStore.DanielleCruzId, "Cruz, Danielle Mae S.", "2023-00822"),
-                new(FinanceDataStore.ElijahDomingoId, "Domingo, Elijah James R.", "2023-00834"),
-                new(FinanceDataStore.FrancineEspinosaId, "Espinosa, Francine Nicole L.", "2023-00839"),
-                new(FinanceDataStore.IanGonzalesId, "Gonzales, Ian Carlo T.", "2023-00842"),
-                new(FinanceDataStore.KatrinaHernandezId, "Hernandez, Katrina Marie V.", "2023-00845"),
-                new(FinanceDataStore.MariaClaraId, "Reyes, Maria Clara D.", "2023-00847")
-            ]
-        );
+        var students = await db.GetClassRosterFromDbAsync(sectionId);
+        if (students.Count > 0)
+        {
+            return new ClassRosterDto(
+                SectionLabel: $"{sectionId} · Live MySQL Enrollment Roster",
+                Students: students);
+        }
 
-        return Task.FromResult<ClassRosterDto?>(roster);
+        return new ClassRosterDto(
+            SectionLabel: $"{sectionId} · Room 402",
+            Students: []);
     }
 }
 

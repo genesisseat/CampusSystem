@@ -1,0 +1,98 @@
+[
+  {
+    "Id": 1,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "DepartmentName": "Finance",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Tuition settled",
+    "UpdatedAt": "2026-09-29T03:05:35.9916328Z"
+  },
+  {
+    "Id": 2,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "DepartmentName": "Registrar",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Credentials verified",
+    "UpdatedAt": "2026-09-29T03:05:35.9921032Z"
+  },
+  {
+    "Id": 3,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "DepartmentName": "Library",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "No unreturned books",
+    "UpdatedAt": "2026-09-29T03:05:35.9921036Z"
+  },
+  {
+    "Id": 4,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "DepartmentName": "Guidance",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Good standing",
+    "UpdatedAt": "2026-09-29T03:05:35.9921038Z"
+  },
+  {
+    "Id": 5,
+    "StudentId": 5,
+    "StudentNumber": "2024-00101",
+    "StudentName": "Alyssa Bea Mendoza",
+    "DepartmentName": "Finance",
+    "Status": "Pending",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Awaiting tuition settlement",
+    "UpdatedAt": "2026-09-29T03:05:35.992104Z"
+  },
+  {
+    "Id": 6,
+    "StudentId": 5,
+    "StudentNumber": "2024-00101",
+    "StudentName": "Alyssa Bea Mendoza",
+    "DepartmentName": "Registrar",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Credentials verified",
+    "UpdatedAt": "2026-09-29T03:05:35.9921048Z"
+  },
+  {
+    "Id": 7,
+    "StudentId": 5,
+    "StudentNumber": "2024-00101",
+    "StudentName": "Alyssa Bea Mendoza",
+    "DepartmentName": "Library",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Clear",
+    "UpdatedAt": "2026-09-29T03:05:35.992105Z"
+  },
+  {
+    "Id": 8,
+    "StudentId": 5,
+    "StudentNumber": "2024-00101",
+    "StudentName": "Alyssa Bea Mendoza",
+    "DepartmentName": "Guidance",
+    "Status": "Cleared",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "Remarks": "Clear",
+    "UpdatedAt": "2026-09-29T03:05:35.9921051Z"
+  }
+]

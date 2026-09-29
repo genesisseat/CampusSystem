@@ -5,6 +5,7 @@
     ViewData["ActivePage"] = "Financials";
     var studentName = Model.Student?.Name ?? "Student";
     var studentIdNum = Model.Student?.StudentIdNumber ?? "";
+    var fa = Model.FinancialAssessment;
 }
 
 <div class="portal-page-header">
@@ -14,21 +15,15 @@
         </div>
         <h1 class="portal-page-title">Tuition, Assessment &amp; Payments</h1>
         <p class="portal-page-subtitle">
-            Statement of Account, fee assessment breakdown, and official payment receipts.
+            Statement of Account, 3-Stage Installment Plan, and official payment receipts synced with MySQL.
         </p>
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;" class="no-print">
-        <button type="button" onclick="document.getElementById('payModal').style.display='flex'" class="btn-nu btn-nu-gold">
+        <button type="button" onclick="openPaymentModal(@(fa.IsDownpaymentSettled ? Model.RemainingBalance : fa.DownpaymentDue))" class="btn-nu btn-nu-gold">
             💳 Pay Online Now
         </button>
-        <a href="http://localhost:5124/OAO" class="btn-nu btn-nu-outline" target="_blank" title="Official Assessment Order with National University letterhead">
-            🖨️ View Official OAO
-        </a>
-        <a href="http://localhost:5124/StudentAccount" class="btn-nu btn-nu-outline" target="_blank">
-            🏦 Finance Portal
-        </a>
         <button type="button" onclick="window.print()" class="btn-nu btn-nu-outline btn-print">
-            Print SOA
+            🖨️ Print SOA
         </button>
     </div>
 </div>
@@ -36,9 +31,9 @@
 <!-- Financial Summary Cards -->
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-label">Total Assessment (AY 2026-2027)</div>
+        <div class="stat-label">Total Assessment (@fa.TotalUnits Units)</div>
         <div class="stat-value">₱@Model.TotalAssessment.ToString("N2")</div>
-        <div class="stat-subtext">Tuition, laboratory &amp; misc fees</div>
+        <div class="stat-subtext">Tuition (₱1,500/u) + Misc (₱4,500)</div>
     </div>
     <div class="stat-card green-border">
         <div class="stat-label">Total Amount Paid</div>
@@ -51,17 +46,132 @@
             ₱@Model.RemainingBalance.ToString("N2")
         </div>
         <div class="stat-subtext">
-            @(Model.RemainingBalance <= 0 ? "✓ Full tuition cleared" : "Upcoming installment due")
+            @(Model.RemainingBalance <= 0 ? "✓ Full tuition settled" : "Active term balance")
         </div>
     </div>
     <div class="stat-card info-border">
-        <div class="stat-label">Enrollment Billing Status</div>
+        <div class="stat-label">Payment Status</div>
         <div class="stat-value" style="font-size:20px;">
-            <span class="badge-status @(Model.RemainingBalance <= 0 ? "badge-success" : "badge-info")" style="font-size:14px;">
-                @(Model.RemainingBalance <= 0 ? "Fully Paid" : "Good Credit / On Schedule")
+            <span class="badge-status @(fa.IsFullySettled ? "badge-success" : (fa.IsDownpaymentSettled ? "badge-info" : "badge-warning"))" style="font-size:14px;">
+                @fa.PaymentStatus
             </span>
         </div>
-        <div class="stat-subtext">Eligible for exam permits &amp; registration</div>
+        <div class="stat-subtext">@(fa.IsDownpaymentSettled ? "✓ Eligible for Class & Exam Permits" : "⚠️ Downpayment required for full validation")</div>
+    </div>
+</div>
+
+<!-- ─── 3-Stage Installment Schedule Matrix ──────────────────────────────── -->
+<div class="portal-card" style="margin-bottom:24px;">
+    <div class="portal-card-header">
+        <h3 class="portal-card-title">
+            <span>📅</span> 3-Stage Semestral Installment Plan
+        </h3>
+        <span style="font-size:12px; color:var(--nu-text-muted);">Standard University Payment Schedule</span>
+    </div>
+    <div class="portal-card-body" style="padding:0;">
+        <div class="portal-table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Installment Term</th>
+                        <th>Required Amount</th>
+                        <th>Cumulative Target</th>
+                        <th>Status</th>
+                        <th style="text-align:right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong style="color:var(--nu-blue-dark);">Stage 1: Downpayment (Upon Enrollment)</strong>
+                            <div style="font-size:11px; color:var(--nu-text-muted);">Required to activate official enrollment & exam eligibility</div>
+                        </td>
+                        <td><strong style="color:var(--nu-blue);">₱@fa.DownpaymentDue.ToString("N2")</strong></td>
+                        <td>₱@fa.DownpaymentDue.ToString("N2")</td>
+                        <td>
+                            @if (fa.IsDownpaymentSettled)
+                            {
+                                <span class="badge-status badge-success">✓ Settled</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-warning">Due Now</span>
+                            }
+                        </td>
+                        <td style="text-align:right;">
+                            @if (!fa.IsDownpaymentSettled)
+                            {
+                                <button type="button" class="btn-nu btn-nu-gold btn-sm" onclick="openPaymentModal(@(Math.Max(0, fa.DownpaymentDue - Model.TotalPaid)), 'Downpayment for AY 2025-2026')">Pay Downpayment</button>
+                            }
+                            else
+                            {
+                                <span style="font-size:12px; color:#15803d; font-weight:700;">Paid</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong style="color:var(--nu-blue-dark);">Stage 2: Midterm Installment</strong>
+                            <div style="font-size:11px; color:var(--nu-text-muted);">Due before Midterm Examination period</div>
+                        </td>
+                        <td><strong style="color:var(--nu-blue);">₱@fa.MidtermDue.ToString("N2")</strong></td>
+                        <td>₱@((fa.DownpaymentDue + fa.MidtermDue).ToString("N2"))</td>
+                        <td>
+                            @if (fa.IsMidtermSettled)
+                            {
+                                <span class="badge-status badge-success">✓ Settled</span>
+                            }
+                            else if (fa.IsDownpaymentSettled)
+                            {
+                                <span class="badge-status badge-info">Next Due</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-secondary">Pending Downpayment</span>
+                            }
+                        </td>
+                        <td style="text-align:right;">
+                            @if (!fa.IsMidtermSettled)
+                            {
+                                <button type="button" class="btn-nu btn-nu-outline btn-sm" onclick="openPaymentModal(@fa.MidtermDue, 'Midterm Installment Payment')">Pay Midterm</button>
+                            }
+                            else
+                            {
+                                <span style="font-size:12px; color:#15803d; font-weight:700;">Paid</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong style="color:var(--nu-blue-dark);">Stage 3: Final Installment</strong>
+                            <div style="font-size:11px; color:var(--nu-text-muted);">Due before Final Examinations & Grade Release</div>
+                        </td>
+                        <td><strong style="color:var(--nu-blue);">₱@fa.FinalDue.ToString("N2")</strong></td>
+                        <td>₱@fa.TotalAssessment.ToString("N2")</td>
+                        <td>
+                            @if (fa.IsFullySettled)
+                            {
+                                <span class="badge-status badge-success">✓ Settled</span>
+                            }
+                            else
+                            {
+                                <span class="badge-status badge-secondary">Final Term</span>
+                            }
+                        </td>
+                        <td style="text-align:right;">
+                            @if (!fa.IsFullySettled)
+                            {
+                                <button type="button" class="btn-nu btn-nu-outline btn-sm" onclick="openPaymentModal(@Model.RemainingBalance, 'Final Balance Settlement')">Settle Full Balance</button>
+                            }
+                            else
+                            {
+                                <span style="font-size:12px; color:#15803d; font-weight:700;">Paid</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -111,7 +221,8 @@
         else
         {
             <div style="padding:48px; text-align:center; color:var(--nu-text-muted);">
-                <p>No payment records found.</p>
+                <div style="font-size:2rem; margin-bottom:8px;">🧾</div>
+                <p>No payment records found yet. Pay your downpayment above to activate your official enrollment.</p>
             </div>
         }
     </div>
@@ -127,17 +238,12 @@
         <form method="post" asp-page-handler="Pay">
             <div class="form-group">
                 <label class="form-label">Fee Description:</label>
-                <select name="description" class="form-select">
-                    <option value="AY 2025-2026 Tuition Installment">AY 2025-2026 Tuition Installment</option>
-                    <option value="Midterm Exam Examination Permit Fee">Midterm Exam Examination Permit Fee</option>
-                    <option value="Laboratory Breakage / Deposit Settle">Laboratory Deposit Settle</option>
-                    <option value="Graduation & Diploma Fee">Graduation &amp; Diploma Fee</option>
-                </select>
+                <input type="text" id="payDescription" name="description" class="form-control" value="AY 2025-2026 Tuition Installment" required />
             </div>
 
             <div class="form-group">
                 <label class="form-label">Payment Amount (₱):</label>
-                <input type="number" step="0.01" min="100" max="50000" name="amount" class="form-control" value="4000.00" required />
+                <input type="number" step="0.01" min="100" max="60000" id="payAmount" name="amount" class="form-control" value="5000.00" required />
             </div>
 
             <div class="form-group">
@@ -151,7 +257,7 @@
             </div>
 
             <div style="background:var(--nu-surface-alt); border:1px solid var(--nu-border); border-radius:var(--nu-radius-sm); padding:10px 12px; margin-bottom:16px; font-size:12px; color:var(--nu-text-muted);">
-                🔒 <strong>Finance Verification:</strong> Official receipt with tracking number will be generated immediately upon confirmation.
+                🔒 <strong>Finance &amp; Registrar Sync:</strong> Paying at least the Downpayment (₱5,000) automatically activates your official enrollment and reflects immediately on the Faculty Class Roster.
             </div>
 
             <div style="display:flex; justify-content:flex-end; gap:10px;">
@@ -161,3 +267,15 @@
         </form>
     </div>
 </div>
+
+<script>
+    function openPaymentModal(suggestedAmount, desc) {
+        if (suggestedAmount && suggestedAmount > 0) {
+            document.getElementById('payAmount').value = suggestedAmount.toFixed(2);
+        }
+        if (desc) {
+            document.getElementById('payDescription').value = desc;
+        }
+        document.getElementById('payModal').style.display = 'flex';
+    }
+</script>

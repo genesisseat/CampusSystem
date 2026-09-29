@@ -1,0 +1,42 @@
+[
+  {
+    "Id": 1,
+    "StudentId": 5,
+    "Program": "BS Information Technology",
+    "YearLevel": 2,
+    "AcademicStatus": "Regular",
+    "Gwa": 1.45,
+    "ContactNumber": "0917-555-0101",
+    "Address": "Sampaloc, Manila"
+  },
+  {
+    "Id": 2,
+    "StudentId": 6,
+    "Program": "BS Computer Science",
+    "YearLevel": 2,
+    "AcademicStatus": "Regular",
+    "Gwa": 1.70,
+    "ContactNumber": "0917-555-0102",
+    "Address": "Quezon City"
+  },
+  {
+    "Id": 3,
+    "StudentId": 7,
+    "Program": "BS Information Technology",
+    "YearLevel": 3,
+    "AcademicStatus": "Regular",
+    "Gwa": 1.25,
+    "ContactNumber": "0917-555-0103",
+    "Address": "Makati City"
+  },
+  {
+    "Id": 4,
+    "StudentId": 8,
+    "Program": "BS Business Administration",
+    "YearLevel": 1,
+    "AcademicStatus": "Regular",
+    "Gwa": 1.90,
+    "ContactNumber": "0917-555-0104",
+    "Address": "Pasig City"
+  }
+]

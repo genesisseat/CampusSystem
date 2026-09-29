@@ -20,6 +20,7 @@ builder.Services.AddSingleton<IPiiMaskingService, PiiMaskingService>();
 builder.Services.AddScoped<IOutboundMessageTransport, UnavailableOutboundMessageTransport>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
+builder.Services.AddSingleton<CampusSystem.Data.Services.CampusJsonDb>();
 builder.Services.AddSingleton<FinanceDataStore>();
 builder.Services.AddSingleton<FinanceDbService>();
 builder.Services.AddScoped<CurrentUserContext>();

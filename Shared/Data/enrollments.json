@@ -1,0 +1,32 @@
+[
+  {
+    "Id": 1,
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "Program": "BS Information Technology",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "EnrollmentType": "Regular",
+    "Status": "enrolled",
+    "TotalUnits": 21,
+    "CreatedAt": "2026-09-19T03:05:35.9419644Z",
+    "ApprovedAt": "2026-09-20T03:05:35.9420333Z",
+    "ApprovedBy": "Dr. Rosalinda Santos"
+  },
+  {
+    "Id": 2,
+    "StudentId": 5,
+    "StudentNumber": "2024-00101",
+    "StudentName": "Alyssa Bea Mendoza",
+    "Program": "BS Information Technology",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "EnrollmentType": "Regular",
+    "Status": "pending",
+    "TotalUnits": 21,
+    "CreatedAt": "2026-09-29T01:05:35.942183Z",
+    "ApprovedAt": null,
+    "ApprovedBy": null
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "Id": 1,
+    "Code": "CC101",
+    "Title": "Introduction to Computing",
+    "Units": 3,
+    "LectureHours": 3,
+    "LabHours": 0,
+    "Prerequisite": "None"
+  },
+  {
+    "Id": 2,
+    "Code": "CC102",
+    "Title": "Data Structures and Algorithms",
+    "Units": 3,
+    "LectureHours": 2,
+    "LabHours": 3,
+    "Prerequisite": "CC101"
+  },
+  {
+    "Id": 3,
+    "Code": "IT201",
+    "Title": "Web Systems and Technologies",
+    "Units": 3,
+    "LectureHours": 2,
+    "LabHours": 3,
+    "Prerequisite": "CC102"
+  },
+  {
+    "Id": 4,
+    "Code": "IT202",
+    "Title": "Database Management Systems",
+    "Units": 3,
+    "LectureHours": 2,
+    "LabHours": 3,
+    "Prerequisite": "CC101"
+  },
+  {
+    "Id": 5,
+    "Code": "CS301",
+    "Title": "Operating Systems Architecture",
+    "Units": 3,
+    "LectureHours": 3,
+    "LabHours": 0,
+    "Prerequisite": "CC102"
+  },
+  {
+    "Id": 6,
+    "Code": "MATH101",
+    "Title": "Calculus for Computing",
+    "Units": 3,
+    "LectureHours": 3,
+    "LabHours": 0,
+    "Prerequisite": "None"
+  },
+  {
+    "Id": 7,
+    "Code": "ENG101",
+    "Title": "Purposive Communication",
+    "Units": 3,
+    "LectureHours": 3,
+    "LabHours": 0,
+    "Prerequisite": "None"
+  }
+]

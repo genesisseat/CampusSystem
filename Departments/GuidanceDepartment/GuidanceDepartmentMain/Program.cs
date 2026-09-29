@@ -35,7 +35,7 @@ builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddSingleton<CampusSystem.Data.Services.CampusJsonDb>();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -60,5 +60,19 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapGet("/api/guidance/referrals", (CampusSystem.Data.Services.CampusJsonDb db) => 
+    Results.Ok(new { succeeded = true, referrals = db.GetGuidanceReferrals() }));
+
+app.MapPost("/api/guidance/referrals/{id:int}/status", (int id, string status, CampusSystem.Data.Services.CampusJsonDb db) =>
+{
+    var list = db.GetGuidanceReferrals();
+    var item = list.FirstOrDefault(r => r.Id == id);
+    if (item == null) return Results.NotFound(new { succeeded = false, message = "Referral not found" });
+    item.Status = status;
+    if (status == "resolved") item.ResolvedAt = DateTime.UtcNow;
+    db.SaveGuidanceReferrals(list);
+    return Results.Ok(new { succeeded = true, referral = item });
+});
 
 app.Run();

@@ -1,0 +1,20 @@
+[
+  {
+    "Id": 1,
+    "AssessmentNumber": "ASM-2026-00007",
+    "StudentId": 7,
+    "StudentNumber": "2024-00103",
+    "StudentName": "Maria Clara Santos",
+    "Program": "BS Information Technology",
+    "SchoolYear": "2026-2027",
+    "Semester": "1st Semester",
+    "TotalUnits": 21,
+    "TuitionFee": 31500,
+    "MiscellaneousFee": 4500,
+    "TotalAmount": 36000,
+    "TotalPaid": 36000,
+    "Balance": 0,
+    "Status": "Fully Paid",
+    "CreatedAt": "2026-09-20T03:05:35.9678513Z"
+  }
+]

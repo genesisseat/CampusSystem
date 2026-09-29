@@ -285,3 +285,27 @@ public class AssignmentItem
     public decimal? MyScore { get; set; }
 }
 
+public class StudentFinancialAssessment
+{
+    public int StudentId { get; set; }
+    public string AssessmentNumber { get; set; } = "";
+    public int TotalUnits { get; set; }
+    public decimal UnitRate { get; set; } = 1500.00m;
+    public decimal TuitionFee => TotalUnits * UnitRate;
+    public decimal MiscFee { get; set; } = 4500.00m;
+    public decimal TotalAssessment => TuitionFee + MiscFee;
+    public decimal TotalPaid { get; set; }
+    public decimal RemainingBalance => Math.Max(0, TotalAssessment - TotalPaid);
+
+    // 3-Stage Installment Plan
+    public decimal DownpaymentDue => 5000.00m;
+    public decimal MidtermDue => Math.Max(0, Math.Round((TotalAssessment - DownpaymentDue) / 2, 2));
+    public decimal FinalDue => Math.Max(0, TotalAssessment - DownpaymentDue - MidtermDue);
+
+    public bool IsDownpaymentSettled => TotalPaid >= DownpaymentDue;
+    public bool IsMidtermSettled => TotalPaid >= (DownpaymentDue + MidtermDue);
+    public bool IsFullySettled => TotalPaid >= TotalAssessment;
+    public string PaymentStatus => IsFullySettled ? "Fully Paid" : (IsDownpaymentSettled ? "Installment Active" : "Pending Downpayment");
+}
+
+

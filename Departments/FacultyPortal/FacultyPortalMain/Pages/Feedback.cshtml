@@ -1,4 +1,5 @@
 @page
+@model FacultyPortalMain.Pages.FeedbackModel
 @{
     ViewData["Title"] = "Feedback";
     ViewData["ActivePage"] = "Feedback";
@@ -7,55 +8,100 @@
 <div class="portal-page-header">
     <div>
         <div class="portal-eyebrow">Student communication</div>
-        <h1 class="portal-page-title">Feedback</h1>
-        <p class="portal-page-subtitle">Write comments on a student's submission. Demo data only.</p>
-    </div>
-    <div class="page-actions">
-        <button type="button" class="btn-nu btn-nu-gold">💾 Save feedback</button>
+        <h1 class="portal-page-title">Academic Feedback</h1>
+        <p class="portal-page-subtitle">Provide personalized academic feedback and performance commentary stored in MySQL.</p>
     </div>
 </div>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div style="background:#e8f5e9; border:1px solid #81c784; color:#2e7d32; padding:12px 16px; border-radius:8px; margin-bottom:1.5rem; font-weight:500;">
+        ✅ @Model.Message
+    </div>
+}
 
 <div class="split-grid">
     <div class="portal-card">
         <div class="portal-card-header">
-            <h3 class="portal-card-title"><span>💬</span> Write feedback</h3>
+            <h3 class="portal-card-title"><span>💬</span> Write Student Feedback</h3>
         </div>
         <div class="portal-card-body">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label" for="assignment">Assignment</label>
-                    <select id="assignment" class="form-select">
-                        <option>Subnetting Lab (IT301-A)</option>
-                        <option>Firewall Rules (IT402-B)</option>
-                    </select>
+            <form method="post">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label" for="assignment">Assignment / Course Activity</label>
+                        <select id="assignment" name="assignmentTitle" class="form-select" required>
+                            @if (Model.Assignments.Count == 0)
+                            {
+                                <option value="General Academic Performance">General Academic Performance</option>
+                                <option value="Midterm Project Review">Midterm Project Review</option>
+                                <option value="Laboratory Submission">Laboratory Submission</option>
+                            }
+                            else
+                            {
+                                @foreach (var a in Model.Assignments)
+                                {
+                                    <option value="@a.Title">@a.SubjectCode — @a.Title</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="student">Student Recipient</label>
+                        <select id="student" name="studentId" class="form-select" required>
+                            @if (Model.Students.Count == 0)
+                            {
+                                <option value="">No students available</option>
+                            }
+                            else
+                            {
+                                @foreach (var s in Model.Students)
+                                {
+                                    <option value="@s.StudentId">@s.Name (@s.StudentIdNumber)</option>
+                                }
+                            }
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="student">Student</label>
-                    <select id="student" class="form-select">
-                        <option>Sample Student 1</option>
-                        <option>Sample Student 2</option>
-                    </select>
+                <div class="form-group" style="margin-top:12px;">
+                    <label class="form-label" for="comment">Faculty Feedback & Guidance</label>
+                    <textarea id="comment" name="comment" class="form-control" rows="5" placeholder="Write feedback, recommendations, or grading comments..." required></textarea>
                 </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="comment">Comment</label>
-                <textarea id="comment" class="form-control" rows="6" placeholder="Write feedback for this submission"></textarea>
-            </div>
+                <div style="margin-top:1.25rem; text-align:right;">
+                    <button type="submit" class="btn-nu btn-nu-gold" style="font-weight:700;">💾 Save & Dispatch Feedback</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <div class="portal-card">
         <div class="portal-card-header">
-            <h3 class="portal-card-title"><span>🗂️</span> Previous comments</h3>
+            <h3 class="portal-card-title"><span>🗂️</span> Recent Feedback Log</h3>
         </div>
         <div class="portal-card-body">
-            <ul class="list-plain">
-                <li>
-                    <div class="cell-title">Sample Student 1</div>
-                    <div class="cell-sub">Good work. Check your subnet masks in part 3.</div>
-                </li>
-                <li class="muted">No other comments yet.</li>
-            </ul>
+            @if (Model.RecentFeedback.Count == 0)
+            {
+                <div style="text-align:center; padding:2rem; color:#64748b;">
+                    <div style="font-size:1.5rem; margin-bottom:6px;">💬</div>
+                    <p style="margin:0; font-size:0.9rem;">No feedback recorded yet in the database.</p>
+                </div>
+            }
+            else
+            {
+                <ul class="list-plain">
+                    @foreach (var fb in Model.RecentFeedback)
+                    {
+                        <li style="padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                <div class="cell-title">@fb.StudentName</div>
+                                <span style="font-size:0.75rem; color:#94a3b8;">@fb.CreatedAt.ToString("MMM d, yyyy")</span>
+                            </div>
+                            <div style="font-size:0.8rem; font-weight:600; color:#0b2545; margin-top:2px;">@fb.AssignmentTitle</div>
+                            <div class="cell-sub" style="margin-top:4px; color:#475569;">@fb.Comment</div>
+                        </li>
+                    }
+                </ul>
+            }
         </div>
     </div>
 </div>

@@ -30,8 +30,13 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+builder.Services.AddSingleton<CampusSystem.Data.Services.CampusJsonDb>();
 builder.Services.AddTransient<MySqlConnector.MySqlConnection>(_ =>
+<<<<<<< Updated upstream
     new MySqlConnector.MySqlConnection(mysqlConnectionString));
+=======
+    new MySqlConnector.MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Server=localhost;Database=dummy"));
+>>>>>>> Stashed changes
 builder.Services.AddScoped<StudentPortalDbService>();
 
 builder.Services.AddRazorPages();

@@ -95,4 +95,29 @@ public class EnrollmentModel : PageModel
         TempData["FlashType"] = "success";
         return RedirectToPage();
     }
+
+    public async Task<IActionResult> OnPostReserveEnrollmentAsync(string schoolYear, string semester, List<int> selectedOfferings)
+    {
+        var studentId = _db.CurrentStudentId;
+        if (selectedOfferings == null || selectedOfferings.Count == 0)
+        {
+            TempData["FlashMessage"] = "Please select at least one class offering / subject to reserve.";
+            TempData["FlashType"] = "danger";
+            return RedirectToPage();
+        }
+
+        var enId = await _db.SubmitEnrollmentReservationAsync(studentId, schoolYear, semester, selectedOfferings);
+        if (enId > 0)
+        {
+            TempData["FlashMessage"] = $"Subject reservation filed successfully! Status is now PENDING VALIDATION in Registrar Queue. Tuition assessment generated in Finance.";
+            TempData["FlashType"] = "success";
+        }
+        else
+        {
+            TempData["FlashMessage"] = "Failed to submit subject reservation. Please try again.";
+            TempData["FlashType"] = "danger";
+        }
+
+        return RedirectToPage();
+    }
 }

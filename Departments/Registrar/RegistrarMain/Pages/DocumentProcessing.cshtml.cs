@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using Dapper;
+using System.Threading.Tasks;
+using CampusSystem.Data.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RegistrarMain.Models;
 using RegistrarMain.Services;
 
 namespace RegistrarMain.Pages;
@@ -11,10 +14,12 @@ namespace RegistrarMain.Pages;
 public class DocumentProcessingModel : PageModel
 {
     private readonly DatabaseService _db;
+    private readonly CampusJsonDb _jsonDb;
 
-    public DocumentProcessingModel(DatabaseService db)
+    public DocumentProcessingModel(DatabaseService db, CampusJsonDb jsonDb)
     {
         _db = db;
+        _jsonDb = jsonDb;
     }
 
     public string ActiveTab { get; set; } = "queue";
@@ -80,70 +85,116 @@ public class DocumentProcessingModel : PageModel
         public string? Remarks { get; set; }
     }
 
-    public async Task<IActionResult> OnGetAsync(string tab = "queue", string status_filter = "", int req_id = 0)
+    public Task<IActionResult> OnGetAsync(string tab = "queue", string status_filter = "", int req_id = 0)
     {
         _db.EnsureRegistrarSession();
         ActiveTab = new[] { "queue", "issue", "print_doc" }.Contains(tab) ? tab : "queue";
         StatusFilter = status_filter?.Trim() ?? "";
         PrintReqId = req_id;
 
-        var conn = _db.Connection;
+        var users = _jsonDb.GetUsers();
+        var profiles = _jsonDb.GetStudentProfiles();
+        var requests = _jsonDb.GetTranscriptRequests();
 
-        var students = await conn.QueryAsync<StudentSimpleItem>(
-            "SELECT u.id, u.student_id_number AS StudentIdNumber, u.name, sp.program " +
-            "FROM `user` u JOIN student_profile sp ON sp.user_id = u.id WHERE u.role = 'student' ORDER BY u.name ASC");
-        StudentsList = students.AsList();
+        StudentsList = users
+            .Where(u => u.Role == "student")
+            .Select(u =>
+            {
+                var p = profiles.FirstOrDefault(x => x.StudentId == u.Id);
+                return new StudentSimpleItem
+                {
+                    Id = u.Id,
+                    StudentIdNumber = u.StudentIdNumber,
+                    Name = u.Name,
+                    Program = p?.Program ?? "BS Information Technology"
+                };
+            })
+            .OrderBy(s => s.Name)
+            .ToList();
 
-        var sql = "SELECT tr.id, tr.student_id AS StudentId, tr.document_type AS DocumentType, tr.purpose, tr.copies, tr.status, " +
-                  "tr.qr_code_token AS QrCodeToken, tr.remarks, tr.requested_at AS RequestedAt, " +
-                  "u.name AS StudentName, u.student_id_number AS StudentIdNumber, u.email, sp.program, sp.year_level AS YearLevel " +
-                  "FROM transcript_requests tr " +
-                  "JOIN `user` u ON u.id = tr.student_id " +
-                  "LEFT JOIN student_profile sp ON sp.user_id = u.id";
-
-        var prms = new DynamicParameters();
+        var qList = requests.AsEnumerable();
         if (!string.IsNullOrEmpty(StatusFilter))
         {
-            sql += " WHERE tr.status = @st";
-            prms.Add("st", StatusFilter);
+            qList = qList.Where(r => r.Status.Equals(StatusFilter, StringComparison.OrdinalIgnoreCase));
         }
-        sql += " ORDER BY tr.requested_at DESC";
 
-        var qList = await conn.QueryAsync<DocumentQueueItem>(sql, prms);
-        RequestsQueue = qList.AsList();
+        RequestsQueue = qList
+            .Select(tr =>
+            {
+                var u = users.FirstOrDefault(x => x.Id == tr.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == tr.StudentId);
+
+                return new DocumentQueueItem
+                {
+                    Id = tr.Id,
+                    StudentId = tr.StudentId,
+                    DocumentType = tr.DocumentType,
+                    Purpose = tr.Purpose,
+                    Copies = tr.Copies,
+                    Status = tr.Status,
+                    QrCodeToken = tr.QrCodeToken,
+                    Remarks = tr.Remarks,
+                    RequestedAt = tr.RequestedAt,
+                    StudentName = u?.Name ?? tr.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? tr.StudentNumber,
+                    Email = u?.Email ?? $"{tr.StudentId}@student.campus.edu",
+                    Program = p?.Program ?? "BS Information Technology",
+                    YearLevel = p != null ? $"{p.YearLevel}nd Year" : "2nd Year"
+                };
+            })
+            .OrderByDescending(r => r.RequestedAt)
+            .ToList();
 
         if (PrintReqId > 0)
         {
-            PrintData = await conn.QueryFirstOrDefaultAsync<PrintDataDetail>(
-                "SELECT tr.id, tr.student_id AS StudentId, tr.document_type AS DocumentType, tr.purpose, tr.qr_code_token AS QrCodeToken, tr.requested_at AS RequestedAt, " +
-                "u.name AS StudentName, u.student_id_number AS StudentIdNumber, u.email, sp.program, sp.year_level AS YearLevel, sp.average_grade AS AverageGrade " +
-                "FROM transcript_requests tr " +
-                "JOIN `user` u ON u.id = tr.student_id " +
-                "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
-                "WHERE tr.id = @id",
-                new { id = PrintReqId });
-
-            if (PrintData != null)
+            var tr = requests.FirstOrDefault(r => r.Id == PrintReqId);
+            if (tr != null)
             {
-                var grades = await conn.QueryAsync<PrintStudentGradeItem>(
-                    "SELECT s.subject_code AS SubjectCode, s.subject_name AS SubjectName, s.units, e.school_year AS SchoolYear, e.semester, " +
-                    "g.grade, g.is_inc AS IsInc, g.remarks " +
-                    "FROM enrolled_subjects es " +
-                    "JOIN enrollments e ON e.id = es.enrollment_id " +
-                    "JOIN class_offerings co ON co.id = es.class_offering_id " +
-                    "JOIN subjects s ON s.id = co.subject_id " +
-                    "LEFT JOIN grades g ON g.enrolled_subject_id = es.id " +
-                    "WHERE e.student_id = @sid " +
-                    "ORDER BY e.school_year ASC, e.semester ASC, s.subject_code ASC",
-                    new { sid = PrintData.StudentId });
-                PrintStudentGrades = grades.AsList();
+                var u = users.FirstOrDefault(x => x.Id == tr.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == tr.StudentId);
+
+                PrintData = new PrintDataDetail
+                {
+                    Id = tr.Id,
+                    StudentId = tr.StudentId,
+                    StudentName = u?.Name ?? tr.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? tr.StudentNumber,
+                    Email = u?.Email ?? $"{tr.StudentId}@student.campus.edu",
+                    Program = p?.Program ?? "BS Information Technology",
+                    YearLevel = p != null ? $"{p.YearLevel}nd Year" : "2nd Year",
+                    AverageGrade = p?.Gwa ?? 1.50m,
+                    DocumentType = tr.DocumentType,
+                    Purpose = tr.Purpose,
+                    QrCodeToken = tr.QrCodeToken,
+                    RequestedAt = tr.RequestedAt
+                };
+
+                var enrolledSubs = _jsonDb.GetEnrolledSubjects().Where(es => es.StudentId == tr.StudentId).ToList();
+                var grades = _jsonDb.GetGrades().Where(g => g.StudentId == tr.StudentId).ToList();
+
+                PrintStudentGrades = enrolledSubs.Select(es =>
+                {
+                    var g = grades.FirstOrDefault(x => x.SubjectCode == es.SubjectCode);
+                    decimal? numGrade = decimal.TryParse(g?.FinalGrade, out var val) ? val : 1.50m;
+                    return new PrintStudentGradeItem
+                    {
+                        SubjectCode = es.SubjectCode,
+                        SubjectName = es.SubjectTitle,
+                        Units = es.Units,
+                        SchoolYear = "2026-2027",
+                        Semester = "1st Semester",
+                        Grade = numGrade,
+                        IsInc = g?.Remarks == "Incomplete",
+                        Remarks = g?.Remarks ?? "Passed"
+                    };
+                }).ToList();
             }
         }
 
-        return Page();
+        return Task.FromResult<IActionResult>(Page());
     }
 
-    public async Task<IActionResult> OnPostCreateRequestAsync(int student_id, string document_type, string purpose, int copies, string? remarks)
+    public Task<IActionResult> OnPostCreateRequestAsync(int student_id, string document_type, string purpose, int copies, string? remarks)
     {
         _db.EnsureRegistrarSession();
         var docType = (document_type ?? "").Trim();
@@ -151,19 +202,13 @@ public class DocumentProcessingModel : PageModel
 
         if (student_id > 0 && !string.IsNullOrEmpty(docType))
         {
-            var letters = Regex.Replace(docType, "[^A-Za-z]", "").ToUpper();
-            var prefix = letters.Length >= 3 ? letters.Substring(0, 3) : "DOC";
-            var randomHex = Convert.ToHexString(RandomNumberGenerator.GetBytes(3));
-            var qrToken = $"NU-{prefix}-{DateTime.Now.Year}-{randomHex}";
+            var req = _jsonDb.SubmitTranscriptRequest(student_id, docType, p, Math.Max(1, copies));
+            if (!string.IsNullOrWhiteSpace(remarks))
+            {
+                _jsonDb.UpdateTranscriptRequestStatus(req.Id, "pending", remarks);
+            }
 
-            var conn = _db.Connection;
-            await conn.ExecuteAsync(
-                "INSERT INTO transcript_requests (student_id, document_type, purpose, copies, status, qr_code_token, remarks, requested_at) " +
-                "VALUES (@student_id, @docType, @p, @copies, 'pending', @qrToken, @remarks, NOW())",
-                new { student_id, docType, p, copies = Math.Max(1, copies), qrToken, remarks = (remarks ?? "").Trim() });
-
-            await _db.LogActivityAsync(student_id, $"Document request for {docType} created (Token: {qrToken}) by {_db.CurrentUserName}.");
-            TempData["FlashMessage"] = $"Document request successfully logged with Tracking Token: {qrToken}";
+            TempData["FlashMessage"] = $"Document request successfully logged with Tracking Token: {req.QrCodeToken}";
             TempData["FlashType"] = "success";
         }
         else
@@ -172,10 +217,10 @@ public class DocumentProcessingModel : PageModel
             TempData["FlashType"] = "error";
         }
 
-        return RedirectToPage("/DocumentProcessing", new { tab = "queue" });
+        return Task.FromResult<IActionResult>(RedirectToPage("/DocumentProcessing", new { tab = "queue" }));
     }
 
-    public async Task<IActionResult> OnPostUpdateStatusAsync(int request_id, string status, string? remarks)
+    public Task<IActionResult> OnPostUpdateStatusAsync(int request_id, string status, string? remarks)
     {
         _db.EnsureRegistrarSession();
         var validStatuses = new[] { "pending", "processing", "ready", "released", "rejected" };
@@ -183,27 +228,12 @@ public class DocumentProcessingModel : PageModel
 
         if (request_id > 0 && validStatuses.Contains(newStatus))
         {
-            var conn = _db.Connection;
-            var sql = "UPDATE transcript_requests SET status = @newStatus, remarks = @remarks";
-            if (newStatus == "processing") sql += ", processed_at = NOW()";
-            else if (newStatus == "released") sql += ", released_at = NOW()";
-            sql += " WHERE id = @id";
-
-            await conn.ExecuteAsync(sql, new { newStatus, remarks = (remarks ?? "").Trim(), id = request_id });
-
-            var sRow = await conn.QueryFirstOrDefaultAsync<(int StudentId, string DocumentType)>(
-                "SELECT student_id AS StudentId, document_type AS DocumentType FROM transcript_requests WHERE id = @id",
-                new { id = request_id });
-
-            if (sRow.StudentId > 0)
-            {
-                await _db.LogActivityAsync(sRow.StudentId, $"Document request #{request_id} ({sRow.DocumentType}) marked as {newStatus} by {_db.CurrentUserName}.");
-            }
+            _jsonDb.UpdateTranscriptRequestStatus(request_id, newStatus, remarks ?? "");
 
             TempData["FlashMessage"] = $"Request #{request_id} status updated to {char.ToUpper(newStatus[0]) + newStatus.Substring(1)}.";
             TempData["FlashType"] = "success";
         }
 
-        return RedirectToPage("/DocumentProcessing", new { tab = "queue" });
+        return Task.FromResult<IActionResult>(RedirectToPage("/DocumentProcessing", new { tab = "queue" }));
     }
 }

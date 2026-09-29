@@ -1,4 +1,5 @@
 @page
+@model FacultyPortalMain.Pages.AssignmentsModel
 @{
     ViewData["Title"] = "Assignments";
     ViewData["ActivePage"] = "Assignments";
@@ -6,195 +7,144 @@
 
 <div class="portal-page-header">
     <div>
-        <div class="portal-eyebrow">Coursework</div>
-        <h1 class="portal-page-title">Assignments</h1>
-        <p class="portal-page-subtitle">Create assignments and activities, set due dates, and review student work. Demo data only.</p>
+        <div class="portal-eyebrow">Coursework & Assessment</div>
+        <h1 class="portal-page-title">Course Assignments</h1>
+        <p class="portal-page-subtitle">Create and monitor coursework synced directly with student portals in MySQL.</p>
     </div>
     <div class="page-actions">
-        <a href="#create" class="btn-nu btn-nu-gold">＋ New assignment</a>
+        <button type="button" class="btn-nu btn-nu-gold" onclick="document.getElementById('createAssignmentModal').style.display='flex'">＋ New Assignment</button>
     </div>
 </div>
 
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div style="background:#e8f5e9; border:1px solid #81c784; color:#2e7d32; padding:12px 16px; border-radius:8px; margin-bottom:1.5rem; font-weight:500;">
+        ✅ @Model.Message
+    </div>
+}
+
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-label">Published</div>
-        <div class="stat-value">5</div>
-        <div class="stat-subtext">Visible to students</div>
+        <div class="stat-label">Active Assignments</div>
+        <div class="stat-value">@Model.Assignments.Count</div>
+        <div class="stat-subtext">Currently assigned to students</div>
     </div>
     <div class="stat-card gold-border">
-        <div class="stat-label">To grade</div>
-        <div class="stat-value">18</div>
-        <div class="stat-subtext">Submissions waiting for a score</div>
+        <div class="stat-label">Total Student Submissions</div>
+        <div class="stat-value">@Model.Assignments.Sum(a => a.SubmissionsCount)</div>
+        <div class="stat-subtext">Received from student portal</div>
     </div>
     <div class="stat-card info-border">
-        <div class="stat-label">Due this week</div>
-        <div class="stat-value">2</div>
-        <div class="stat-subtext">Assignments closing soon</div>
+        <div class="stat-label">Graded Submissions</div>
+        <div class="stat-value">@Model.Assignments.Sum(a => a.GradedCount)</div>
+        <div class="stat-subtext">Recorded in grade system</div>
     </div>
     <div class="stat-card green-border">
-        <div class="stat-label">Drafts</div>
-        <div class="stat-value">1</div>
-        <div class="stat-subtext">Not yet published</div>
+        <div class="stat-label">Class Sections</div>
+        <div class="stat-value">@Model.Offerings.Count</div>
+        <div class="stat-subtext">Active academic sections</div>
     </div>
 </div>
 
 <div class="portal-card">
     <div class="portal-card-header">
-        <h3 class="portal-card-title"><span>📝</span> Your assignments</h3>
-    </div>
-    <div class="toolbar">
-        <select class="form-select" aria-label="Section">
-            <option>All sections</option>
-            <option>IT301-A Computer Networks</option>
-            <option>IT402-B Network Security</option>
-        </select>
-        <select class="form-select" aria-label="Status">
-            <option>All statuses</option>
-            <option>Draft</option>
-            <option>Published</option>
-            <option>Closed</option>
-        </select>
-        <input type="text" class="form-control" placeholder="Search by title" aria-label="Search assignments" />
+        <h3 class="portal-card-title"><span>📝</span> Coursework Catalog</h3>
     </div>
     <div class="portal-table-responsive">
         <table class="portal-table">
             <thead>
                 <tr>
-                    <th>Title</th>
-                    <th>Section</th>
-                    <th>Type</th>
-                    <th>Due</th>
-                    <th class="num">Submitted</th>
-                    <th class="num">Graded</th>
-                    <th>Status</th>
-                    <th></th>
+                    <th style="width:120px;">Subject</th>
+                    <th>Assignment Title & Description</th>
+                    <th style="width:100px; text-align:center;">Max Points</th>
+                    <th style="width:140px;">Due Date</th>
+                    <th style="width:140px; text-align:center;">Submissions</th>
+                    <th style="width:120px; text-align:center;">Status</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td><div class="cell-title">Subnetting Lab</div><div class="cell-sub">Max score 50</div></td>
-                    <td>IT301-A</td>
-                    <td>Lab</td>
-                    <td>Oct 6, 2026 &middot; 11:59 PM</td>
-                    <td class="num">24 / 32</td>
-                    <td class="num">10</td>
-                    <td><span class="badge-status badge-success">Published</span></td>
-                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
-                </tr>
-                <tr>
-                    <td><div class="cell-title">Firewall Rules Activity</div><div class="cell-sub">Max score 30</div></td>
-                    <td>IT402-B</td>
-                    <td>Project</td>
-                    <td>Oct 9, 2026 &middot; 5:00 PM</td>
-                    <td class="num">6 / 28</td>
-                    <td class="num">0</td>
-                    <td><span class="badge-status badge-success">Published</span></td>
-                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
-                </tr>
-                <tr>
-                    <td><div class="cell-title">Quiz 1: OSI Model</div><div class="cell-sub">Max score 20</div></td>
-                    <td>IT301-A</td>
-                    <td>Quiz</td>
-                    <td>Sep 22, 2026 &middot; 11:59 PM</td>
-                    <td class="num">32 / 32</td>
-                    <td class="num">32</td>
-                    <td><span class="badge-status badge-secondary">Closed</span></td>
-                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Open</a></td>
-                </tr>
-                <tr>
-                    <td><div class="cell-title">Midterm Case Study</div><div class="cell-sub">Max score 100</div></td>
-                    <td>IT402-B</td>
-                    <td>Exam</td>
-                    <td class="muted">Not set</td>
-                    <td class="num muted">&ndash;</td>
-                    <td class="num muted">&ndash;</td>
-                    <td><span class="badge-status badge-warning">Draft</span></td>
-                    <td><a href="/AssignmentDetail" class="btn-nu btn-nu-outline btn-sm">Edit</a></td>
-                </tr>
+                @if (Model.Assignments.Count == 0)
+                {
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding:3rem; color:#64748b;">
+                            <div style="font-size:1.5rem; margin-bottom:8px;">📋</div>
+                            <strong>No assignments created yet.</strong>
+                            <p style="margin-top:4px; font-size:0.85rem;">Click "＋ New Assignment" above to create an assignment for your class.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var a in Model.Assignments)
+                    {
+                        <tr>
+                            <td>
+                                <span style="font-weight:700; color:#0b2545;">@a.SubjectCode</span>
+                                <div style="font-size:0.75rem; color:#64748b;">@a.SubjectName</div>
+                            </td>
+                            <td>
+                                <div class="cell-title">@a.Title</div>
+                                <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">@a.Description</div>
+                            </td>
+                            <td style="text-align:center; font-weight:700; color:#0b2545;">@a.MaxScore.ToString("F0") pts</td>
+                            <td>
+                                <div style="font-size:0.85rem; font-weight:600; color:#1e293b;">@a.DueDate.ToString("MMM d, yyyy")</div>
+                                <div style="font-size:0.75rem; color:#64748b;">@a.DueDate.ToString("h:mm tt")</div>
+                            </td>
+                            <td style="text-align:center;">
+                                <span style="font-weight:700; color:#0b2545;">@a.SubmissionsCount / @a.TotalAssigned</span>
+                                <div style="font-size:0.75rem; color:#64748b;">(@a.GradedCount graded)</div>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="badge-status badge-status-paid">Published</span>
+                            </td>
+                        </tr>
+                    }
+                }
             </tbody>
         </table>
     </div>
 </div>
 
-<div class="portal-card" id="create">
-    <div class="portal-card-header">
-        <h3 class="portal-card-title"><span>＋</span> New assignment</h3>
-        <span class="badge-status badge-secondary">Draft</span>
-    </div>
-    <div class="portal-card-body">
-        <div class="form-grid">
-            <div class="form-group form-span">
-                <label class="form-label" for="a-title">Title</label>
-                <input id="a-title" type="text" class="form-control" placeholder="e.g. Subnetting Lab" />
-            </div>
-            <div class="form-group form-span">
-                <label class="form-label" for="a-instructions">Instructions</label>
-                <textarea id="a-instructions" class="form-control" rows="4" placeholder="What should students do and hand in?"></textarea>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="a-section">Section</label>
-                <select id="a-section" class="form-select">
-                    <option>IT301-A Computer Networks</option>
-                    <option>IT402-B Network Security</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="a-type">Type</label>
-                <select id="a-type" class="form-select">
-                    <option>Assignment</option>
-                    <option>Activity</option>
-                    <option>Quiz</option>
-                    <option>Lab</option>
-                    <option>Project</option>
-                    <option>Exam</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="a-due">Due date and time</label>
-                <input id="a-due" type="datetime-local" class="form-control" />
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="a-max">Max score</label>
-                <input id="a-max" type="number" class="form-control" value="100" min="1" />
-            </div>
+<!-- Modal for Creating New Assignment -->
+<div id="createAssignmentModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+    <div style="background:#fff; border-radius:12px; width:100%; max-width:540px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.2); overflow:hidden;">
+        <div style="background:#0b2545; color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:1.1rem; font-weight:700;">Create Course Assignment</h3>
+            <button type="button" onclick="document.getElementById('createAssignmentModal').style.display='none'" style="background:none; border:none; color:#fff; font-size:1.4rem; cursor:pointer;">&times;</button>
         </div>
-
-        <div class="form-section-title">Student uploads</div>
-        <div class="form-grid">
-            <div class="form-group form-span">
-                <div class="form-label">Accepted file types</div>
-                <div class="check-row">
-                    <label class="check-item"><input type="checkbox" checked /> Images (JPG, PNG)</label>
-                    <label class="check-item"><input type="checkbox" checked /> PDF</label>
-                    <label class="check-item"><input type="checkbox" checked /> Word</label>
-                    <label class="check-item"><input type="checkbox" checked /> Excel</label>
-                    <label class="check-item"><input type="checkbox" checked /> PowerPoint</label>
-                    <label class="check-item"><input type="checkbox" checked /> Text</label>
-                    <label class="check-item"><input type="checkbox" /> ZIP</label>
+        <form method="post" asp-page-handler="Create" style="padding:20px;">
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;">Target Class Section</label>
+                <select name="classOfferingId" class="form-select" required>
+                    @foreach (var off in Model.Offerings)
+                    {
+                        <option value="@off.Id">@off.SectionCode — @off.SubjectName</option>
+                    }
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;">Assignment Title</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. Laboratory Exercise 1: SQL Relational Queries" required />
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block; font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;">Instructions / Description</label>
+                <textarea name="description" class="form-control" rows="3" placeholder="Provide guidelines, requirements, and deliverables for the students..."></textarea>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+                <div>
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;">Max Score</label>
+                    <input type="number" name="maxScore" class="form-control" value="100" min="1" step="1" required />
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;">Due Date</label>
+                    <input type="date" name="dueDate" class="form-control" value="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")" required />
                 </div>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="a-size">Max size per file (MB)</label>
-                <input id="a-size" type="number" class="form-control" value="25" min="1" />
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" class="btn-nu" style="background:#e2e8f0; color:#334155;" onclick="document.getElementById('createAssignmentModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-nu btn-nu-gold" style="font-weight:700;">Publish Assignment</button>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="a-count">Max files per submission</label>
-                <input id="a-count" type="number" class="form-control" value="5" min="1" />
-            </div>
-            <div class="form-group form-span">
-                <label class="check-item"><input type="checkbox" /> Accept late submissions after the due date</label>
-            </div>
-        </div>
-
-        <div class="form-section-title">Instructions file (optional)</div>
-        <div class="dropzone">
-            <div class="dropzone-title">Attach a file for students</div>
-            <div class="dropzone-sub">Rubric, worksheet or reference. Images, PDF, Word, Excel, PowerPoint.</div>
-            <button type="button" class="btn-nu btn-nu-outline btn-sm">Choose file</button>
-        </div>
-    </div>
-    <div class="card-footer-actions">
-        <button type="button" class="btn-nu btn-nu-outline">Save draft</button>
-        <button type="button" class="btn-nu btn-nu-gold">Publish to students</button>
+        </form>
     </div>
 </div>

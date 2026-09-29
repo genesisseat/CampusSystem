@@ -1,0 +1,156 @@
+[
+  {
+    "Id": 1,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 1,
+    "SubjectCode": "CC101",
+    "SubjectTitle": "Introduction to Computing",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 2,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 2,
+    "SubjectCode": "CC102",
+    "SubjectTitle": "Data Structures and Algorithms",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 3,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 3,
+    "SubjectCode": "IT201",
+    "SubjectTitle": "Web Systems and Technologies",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 4,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 4,
+    "SubjectCode": "IT202",
+    "SubjectTitle": "Database Management Systems",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 5,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 5,
+    "SubjectCode": "CS301",
+    "SubjectTitle": "Operating Systems Architecture",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 6,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 6,
+    "SubjectCode": "MATH101",
+    "SubjectTitle": "Calculus for Computing",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 7,
+    "EnrollmentId": 1,
+    "StudentId": 7,
+    "ClassOfferingId": 7,
+    "SubjectCode": "ENG101",
+    "SubjectTitle": "Purposive Communication",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 8,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 1,
+    "SubjectCode": "CC101",
+    "SubjectTitle": "Introduction to Computing",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 9,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 2,
+    "SubjectCode": "CC102",
+    "SubjectTitle": "Data Structures and Algorithms",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 10,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 3,
+    "SubjectCode": "IT201",
+    "SubjectTitle": "Web Systems and Technologies",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 11,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 4,
+    "SubjectCode": "IT202",
+    "SubjectTitle": "Database Management Systems",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 12,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 5,
+    "SubjectCode": "CS301",
+    "SubjectTitle": "Operating Systems Architecture",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 13,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 6,
+    "SubjectCode": "MATH101",
+    "SubjectTitle": "Calculus for Computing",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  },
+  {
+    "Id": 14,
+    "EnrollmentId": 2,
+    "StudentId": 5,
+    "ClassOfferingId": 7,
+    "SubjectCode": "ENG101",
+    "SubjectTitle": "Purposive Communication",
+    "Units": 3,
+    "Status": "enrolled",
+    "Grade": null
+  }
+]

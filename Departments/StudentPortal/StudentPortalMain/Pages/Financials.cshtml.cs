@@ -17,9 +17,10 @@ public class FinancialsModel : PageModel
     public StudentUser? Student { get; set; }
     public StudentProfileData Profile { get; set; } = new();
     public List<PaymentRecord> Payments { get; set; } = new();
-    public decimal TotalAssessment { get; set; } = 32500.00m;
-    public decimal TotalPaid => Payments.Sum(p => p.Amount);
-    public decimal RemainingBalance => Math.Max(0, TotalAssessment - TotalPaid);
+    public StudentFinancialAssessment FinancialAssessment { get; set; } = new();
+    public decimal TotalAssessment => FinancialAssessment.TotalAssessment;
+    public decimal TotalPaid => FinancialAssessment.TotalPaid;
+    public decimal RemainingBalance => FinancialAssessment.RemainingBalance;
 
     public async Task OnGetAsync()
     {
@@ -28,6 +29,7 @@ public class FinancialsModel : PageModel
         Profile = await _db.GetStudentProfileAsync(studentId);
 
         Payments = await _db.GetPaymentsAsync(studentId);
+        FinancialAssessment = await _db.GetFinancialAssessmentAsync(studentId);
     }
 
     public async Task<IActionResult> OnPostPayAsync(decimal amount, string paymentMethod, string description)
@@ -42,7 +44,7 @@ public class FinancialsModel : PageModel
 
         var rcpt = await _db.SubmitPaymentAsync(studentId, amount, paymentMethod, description?.Trim() ?? "Tuition Installment Payment");
 
-        TempData["FlashMessage"] = $"Payment of ₱{amount:N2} posted successfully! Official Receipt No: {rcpt}. Finance department notified.";
+        TempData["FlashMessage"] = $"Payment of ₱{amount:N2} posted successfully! Official Receipt No: {rcpt}. Finance department & Registrar notified.";
         TempData["FlashType"] = "success";
         return RedirectToPage();
     }

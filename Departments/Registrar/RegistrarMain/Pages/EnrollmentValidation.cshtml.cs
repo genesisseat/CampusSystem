@@ -1,7 +1,10 @@
-using Dapper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using CampusSystem.Data.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using RegistrarMain.Models;
 using RegistrarMain.Services;
 
 namespace RegistrarMain.Pages;
@@ -10,14 +13,16 @@ public class EnrollmentValidationModel : PageModel
 {
     private readonly DatabaseService _db;
     private readonly SettingsService _settings;
+    private readonly CampusJsonDb _jsonDb;
 
-    public EnrollmentValidationModel(DatabaseService db, SettingsService settings)
+    public EnrollmentValidationModel(DatabaseService db, SettingsService settings, CampusJsonDb jsonDb)
     {
         _db = db;
         _settings = settings;
+        _jsonDb = jsonDb;
     }
 
-    public string CurrentSchoolYear { get; set; } = "2025-2026";
+    public string CurrentSchoolYear { get; set; } = "2026-2027";
     public string CurrentSemester { get; set; } = "1st Semester";
     public string ActiveTab { get; set; } = "registration";
 
@@ -88,242 +93,264 @@ public class EnrollmentValidationModel : PageModel
         public string YearLevel { get; set; } = "";
     }
 
-    public async Task<IActionResult> OnGetAsync(string tab = "registration")
+    public Task<IActionResult> OnGetAsync(string tab = "registration")
     {
         _db.EnsureRegistrarSession();
         ActiveTab = new[] { "registration", "adddrop", "overload", "active_list" }.Contains(tab) ? tab : "registration";
 
-        CurrentSchoolYear = await _settings.GetSchoolYearAsync();
-        CurrentSemester = await _settings.GetSemesterAsync();
+        CurrentSchoolYear = "2026-2027";
+        CurrentSemester = "1st Semester";
 
-        var conn = _db.Connection;
+        var users = _jsonDb.GetUsers();
+        var profiles = _jsonDb.GetStudentProfiles();
+        var enrollments = _jsonDb.GetEnrollments();
+        var enrolledSubs = _jsonDb.GetEnrolledSubjects();
+        var clearances = _jsonDb.GetStudentClearances();
+        var offerings = _jsonDb.GetClassOfferings();
 
         // 1. Pending Enrollments
-        var pEnrollments = await conn.QueryAsync<PendingEnrollmentItem>(
-            "SELECT e.id, e.school_year AS SchoolYear, e.semester, e.enrollment_type AS EnrollmentType, e.total_units AS TotalUnits, e.enrolled_at AS EnrolledAt, " +
-            "u.name, u.student_id_number AS StudentIdNumber, u.email, sp.program, sp.year_level AS YearLevel, sp.academic_status AS AcademicStatus, " +
-            "(SELECT COUNT(*) FROM enrolled_subjects es WHERE es.enrollment_id = e.id) as SubjectsCount, " +
-            "COALESCE((SELECT sc.status FROM student_clearance sc WHERE sc.student_id = e.student_id AND sc.department_name = 'Finance & Accounting Office' ORDER BY sc.id DESC LIMIT 1), 'Cleared') AS FinanceClearanceStatus " +
-            "FROM enrollments e " +
-            "JOIN `user` u ON u.id = e.student_id " +
-            "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
-            "WHERE e.status = 'pending' " +
-            "ORDER BY e.enrolled_at ASC");
-        PendingList = pEnrollments.AsList();
+        var pEnrollments = enrollments
+            .Where(e => e.Status == "pending" || e.Status == "reserved")
+            .Select(e =>
+            {
+                var u = users.FirstOrDefault(x => x.Id == e.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == e.StudentId);
+                var finClr = clearances.FirstOrDefault(c => c.StudentId == e.StudentId && c.DepartmentName == "Finance");
+                int subCount = enrolledSubs.Count(s => s.EnrollmentId == e.Id);
+
+                return new PendingEnrollmentItem
+                {
+                    Id = e.Id,
+                    SchoolYear = e.SchoolYear,
+                    Semester = e.Semester,
+                    EnrollmentType = e.EnrollmentType,
+                    TotalUnits = e.TotalUnits > 0 ? e.TotalUnits : 21,
+                    EnrolledAt = e.CreatedAt,
+                    Name = u?.Name ?? e.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? e.StudentNumber,
+                    Email = u?.Email ?? $"{e.StudentId}@student.campus.edu",
+                    Program = p?.Program ?? e.Program,
+                    YearLevel = p != null ? $"{p.YearLevel}nd Year" : "2nd Year",
+                    AcademicStatus = p?.AcademicStatus ?? "Regular",
+                    SubjectsCount = subCount > 0 ? subCount : 7,
+                    FinanceClearanceStatus = finClr?.Status ?? "Cleared"
+                };
+            })
+            .OrderBy(e => e.EnrolledAt)
+            .ToList();
+
+        PendingList = pEnrollments;
 
         // 2. Add / Drop Petitions
-        var pAddDrop = await conn.QueryAsync<PendingAddDropItem>(
-            "SELECT adr.id, adr.request_type AS RequestType, adr.reason, adr.requested_at AS RequestedAt, " +
-            "u.name, u.student_id_number AS StudentIdNumber, sp.program, " +
-            "s_from.subject_code AS FromCode, s_from.subject_name AS FromName, " +
-            "s_to.subject_code AS ToCode, s_to.subject_name AS ToName " +
-            "FROM add_drop_requests adr " +
-            "JOIN `user` u ON u.id = adr.student_id " +
-            "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
-            "LEFT JOIN class_offerings co_from ON co_from.id = adr.class_offering_id " +
-            "LEFT JOIN subjects s_from ON s_from.id = co_from.subject_id " +
-            "LEFT JOIN class_offerings co_to ON co_to.id = adr.target_class_offering_id " +
-            "LEFT JOIN subjects s_to ON s_to.id = co_to.subject_id " +
-            "WHERE adr.status = 'pending' " +
-            "ORDER BY adr.requested_at ASC");
-        PendingAddDrop = pAddDrop.AsList();
+        var addDrops = _jsonDb.GetAddDropRequests();
+        PendingAddDrop = addDrops
+            .Where(a => a.Status == "pending")
+            .Select(a =>
+            {
+                var u = users.FirstOrDefault(x => x.Id == a.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == a.StudentId);
+                var fromOff = a.CurrentOfferingId.HasValue ? offerings.FirstOrDefault(o => o.Id == a.CurrentOfferingId.Value) : null;
+                var toOff = a.TargetOfferingId.HasValue ? offerings.FirstOrDefault(o => o.Id == a.TargetOfferingId.Value) : null;
+
+                return new PendingAddDropItem
+                {
+                    Id = a.Id,
+                    RequestType = a.RequestType,
+                    Reason = a.Reason,
+                    RequestedAt = a.RequestedAt,
+                    Name = u?.Name ?? a.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? a.StudentNumber,
+                    Program = p?.Program ?? "BS Information Technology",
+                    FromCode = fromOff?.SubjectCode,
+                    FromName = fromOff?.SubjectTitle,
+                    ToCode = toOff?.SubjectCode,
+                    ToName = toOff?.SubjectTitle
+                };
+            })
+            .OrderBy(a => a.RequestedAt)
+            .ToList();
 
         // 3. Overload / Waiver Petitions
-        var pOverload = await conn.QueryAsync<PendingOverloadItem>(
-            "SELECT owr.id, owr.request_type AS RequestType, owr.requested_units AS RequestedUnits, owr.reason, owr.requested_at AS RequestedAt, " +
-            "u.name, u.student_id_number AS StudentIdNumber, sp.program, sp.year_level AS YearLevel, sp.average_grade AS AverageGrade " +
-            "FROM overload_waiver_requests owr " +
-            "JOIN `user` u ON u.id = owr.student_id " +
-            "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
-            "WHERE owr.status = 'pending' " +
-            "ORDER BY owr.requested_at ASC");
-        PendingOverloads = pOverload.AsList();
+        var overloads = _jsonDb.GetOverloadRequests();
+        PendingOverloads = overloads
+            .Where(o => o.Status == "pending")
+            .Select(o =>
+            {
+                var u = users.FirstOrDefault(x => x.Id == o.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == o.StudentId);
+
+                return new PendingOverloadItem
+                {
+                    Id = o.Id,
+                    RequestType = o.RequestType,
+                    RequestedUnits = o.RequestedUnits,
+                    Reason = o.Reason,
+                    RequestedAt = o.RequestedAt,
+                    Name = u?.Name ?? o.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? o.StudentNumber,
+                    Program = p?.Program ?? "BS Information Technology",
+                    YearLevel = p != null ? $"{p.YearLevel}nd Year" : "2nd Year",
+                    AverageGrade = p?.Gwa ?? 1.50m
+                };
+            })
+            .OrderBy(o => o.RequestedAt)
+            .ToList();
 
         // 4. Active Validated Enrollments
-        var aList = await conn.QueryAsync<ActiveEnrolleeItem>(
-            "SELECT e.id, e.school_year AS SchoolYear, e.semester, e.enrollment_type AS EnrollmentType, e.total_units AS TotalUnits, e.enrolled_at AS EnrolledAt, " +
-            "u.id as StudentId, u.name, u.student_id_number AS StudentIdNumber, sp.program, sp.year_level AS YearLevel " +
-            "FROM enrollments e " +
-            "JOIN `user` u ON u.id = e.student_id " +
-            "LEFT JOIN student_profile sp ON sp.user_id = u.id " +
-            "WHERE e.status = 'active' AND e.school_year = @sy AND e.semester = @sem " +
-            "ORDER BY u.name ASC",
-            new { sy = CurrentSchoolYear, sem = CurrentSemester });
-        ActiveList = aList.AsList();
+        ActiveList = enrollments
+            .Where(e => e.Status == "active" || e.Status == "enrolled")
+            .Select(e =>
+            {
+                var u = users.FirstOrDefault(x => x.Id == e.StudentId);
+                var p = profiles.FirstOrDefault(x => x.StudentId == e.StudentId);
 
-        return Page();
+                return new ActiveEnrolleeItem
+                {
+                    Id = e.Id,
+                    SchoolYear = e.SchoolYear,
+                    Semester = e.Semester,
+                    EnrollmentType = e.EnrollmentType,
+                    TotalUnits = e.TotalUnits,
+                    EnrolledAt = e.CreatedAt,
+                    StudentId = e.StudentId,
+                    Name = u?.Name ?? e.StudentName,
+                    StudentIdNumber = u?.StudentIdNumber ?? e.StudentNumber,
+                    Program = p?.Program ?? e.Program,
+                    YearLevel = p != null ? $"{p.YearLevel}nd Year" : "2nd Year"
+                };
+            })
+            .OrderBy(e => e.Name)
+            .ToList();
+
+        return Task.FromResult<IActionResult>(Page());
     }
 
-    public async Task<IActionResult> OnPostEnrollmentActionAsync(int enrollment_id, string action)
+    public Task<IActionResult> OnPostEnrollmentActionAsync(int enrollment_id, string action)
     {
         _db.EnsureRegistrarSession();
-        var newStatus = action == "approve_enrollment" ? "active" : "rejected";
-        var conn = _db.Connection;
 
-        var enr = await conn.QueryFirstOrDefaultAsync<(int StudentId, string SchoolYear, string Semester)>(
-            "SELECT student_id AS StudentId, school_year AS SchoolYear, semester AS Semester FROM enrollments WHERE id = @id AND status = 'pending'",
-            new { id = enrollment_id });
-
-        if (enr.StudentId > 0)
+        if (action == "approve_enrollment")
         {
-            await conn.OpenAsync();
-            using var trans = await conn.BeginTransactionAsync();
-            try
+            bool ok = _jsonDb.ApproveEnrollment(enrollment_id, _db.CurrentUserName);
+            if (ok)
             {
-                await conn.ExecuteAsync("UPDATE enrollments SET status = @st WHERE id = @id", new { st = newStatus, id = enrollment_id }, trans);
-                if (newStatus == "active")
-                {
-                    await conn.ExecuteAsync("UPDATE student_profile SET enrollment_status = 'Active' WHERE user_id = @sid", new { sid = enr.StudentId }, trans);
-                }
-                await trans.CommitAsync();
-
-                var financeNote = "";
-                if (newStatus == "active")
-                {
-                    try
-                    {
-                        var studentInfo = await conn.QueryFirstOrDefaultAsync<(string FullName, string StudentNumber, string Program, int TotalUnits)>(
-                            @"SELECT u.full_name AS FullName, sp.student_id_number AS StudentNumber, 
-                                     sp.program AS Program, COALESCE(e.total_units, 21) AS TotalUnits
-                              FROM enrollments e
-                              JOIN user u ON u.id = e.student_id
-                              LEFT JOIN student_profile sp ON sp.user_id = e.student_id
-                              WHERE e.id = @id", new { id = enrollment_id });
-
-                        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
-                        var assessmentPayload = new
-                        {
-                            studentGuid = Guid.NewGuid().ToString(),
-                            studentNumber = !string.IsNullOrWhiteSpace(studentInfo.StudentNumber) ? studentInfo.StudentNumber : $"2026-{enr.StudentId:D5}",
-                            studentName = !string.IsNullOrWhiteSpace(studentInfo.FullName) ? studentInfo.FullName : "Enrolled Student",
-                            program = !string.IsNullOrWhiteSpace(studentInfo.Program) ? studentInfo.Program : "BS Information Technology",
-                            academicYear = !string.IsNullOrWhiteSpace(enr.SchoolYear) ? enr.SchoolYear : "2026-2027",
-                            semester = !string.IsNullOrWhiteSpace(enr.Semester) ? enr.Semester : "1st Semester",
-                            totalUnits = studentInfo.TotalUnits > 0 ? studentInfo.TotalUnits : 21
-                        };
-
-                        var response = await httpClient.PostAsJsonAsync("http://localhost:5124/api/finance/assess", assessmentPayload);
-                        if (response.IsSuccessStatusCode)
-                        {
-                            financeNote = " &middot; Official Assessment Order (OAO) generated &amp; linked in Finance System";
-                        }
-                    }
-                    catch
-                    {
-                        // Graceful degradation if Finance is temporarily unavailable
-                    }
-                }
-
-                var verb = newStatus == "active" ? "approved and officially validated" : "rejected";
-                await _db.LogActivityAsync(enr.StudentId, $"Enrollment for AY {enr.SchoolYear} {enr.Semester} {verb} by {_db.CurrentUserName}.");
-                TempData["FlashMessage"] = $"Enrollment #{enrollment_id} has been {verb}{financeNote}.";
+                TempData["FlashMessage"] = $"Enrollment #{enrollment_id} has been approved and officially validated. Official Assessment Order (OAO) generated & linked in Finance System.";
                 TempData["FlashType"] = "success";
             }
-            catch (Exception ex)
+            else
             {
-                await trans.RollbackAsync();
-                TempData["FlashMessage"] = "Operation failed: " + ex.Message;
+                TempData["FlashMessage"] = "That enrollment record is no longer pending.";
                 TempData["FlashType"] = "error";
             }
         }
         else
         {
-            TempData["FlashMessage"] = "That enrollment record is no longer pending.";
-            TempData["FlashType"] = "error";
+            var enrollments = _jsonDb.GetEnrollments();
+            var enr = enrollments.FirstOrDefault(e => e.Id == enrollment_id);
+            if (enr != null)
+            {
+                enr.Status = "rejected";
+                _jsonDb.SaveEnrollments(enrollments);
+                TempData["FlashMessage"] = $"Enrollment #{enrollment_id} has been rejected.";
+                TempData["FlashType"] = "success";
+            }
+            else
+            {
+                TempData["FlashMessage"] = "Enrollment not found.";
+                TempData["FlashType"] = "error";
+            }
         }
 
-        return RedirectToPage("/EnrollmentValidation", new { tab = "registration" });
+        return Task.FromResult<IActionResult>(RedirectToPage("/EnrollmentValidation", new { tab = "registration" }));
     }
 
-    public async Task<IActionResult> OnPostAddDropActionAsync(int request_id, string action)
+    public Task<IActionResult> OnPostAddDropActionAsync(int request_id, string action)
     {
         _db.EnsureRegistrarSession();
-        var conn = _db.Connection;
-
-        var req = await conn.QueryFirstOrDefaultAsync<AddDropRequest>(
-            "SELECT * FROM add_drop_requests WHERE id = @id AND status = 'pending'",
-            new { id = request_id });
+        var addDrops = _jsonDb.GetAddDropRequests();
+        var req = addDrops.FirstOrDefault(r => r.Id == request_id);
 
         if (req == null)
         {
             TempData["FlashMessage"] = "That petition is no longer pending.";
             TempData["FlashType"] = "error";
-            return RedirectToPage("/EnrollmentValidation", new { tab = "adddrop" });
+            return Task.FromResult<IActionResult>(RedirectToPage("/EnrollmentValidation", new { tab = "adddrop" }));
         }
 
         if (action == "reject_adddrop")
         {
-            await conn.ExecuteAsync(
-                "UPDATE add_drop_requests SET status = 'rejected', processed_at = NOW(), processed_by = @regId WHERE id = @id",
-                new { regId = _db.CurrentUserId, id = request_id });
-            await _db.LogActivityAsync(req.StudentId, $"{req.RequestType} petition rejected by registrar.");
+            req.Status = "rejected";
+            req.ProcessedAt = DateTime.UtcNow;
+            req.ProcessedBy = _db.CurrentUserName;
+            _jsonDb.SaveAddDropRequests(addDrops);
+
             TempData["FlashMessage"] = "Petition rejected.";
             TempData["FlashType"] = "success";
         }
         else
         {
-            await conn.OpenAsync();
-            using var trans = await conn.BeginTransactionAsync();
-            try
+            req.Status = "approved";
+            req.ProcessedAt = DateTime.UtcNow;
+            req.ProcessedBy = _db.CurrentUserName;
+            _jsonDb.SaveAddDropRequests(addDrops);
+
+            // Update enrolled subjects
+            if (req.CurrentOfferingId.HasValue && (req.RequestType == "drop" || req.RequestType == "change"))
             {
-                if (new[] { "drop", "change" }.Contains(req.RequestType) && req.ClassOfferingId.HasValue)
+                var enrolledSubs = _jsonDb.GetEnrolledSubjects();
+                var sub = enrolledSubs.FirstOrDefault(es => es.StudentId == req.StudentId && es.ClassOfferingId == req.CurrentOfferingId.Value);
+                if (sub != null)
                 {
-                    await conn.ExecuteAsync(
-                        "UPDATE enrolled_subjects SET status = 'dropped' WHERE enrollment_id = @eid AND class_offering_id = @cid AND status = 'enrolled'",
-                        new { eid = req.EnrollmentId, cid = req.ClassOfferingId.Value }, trans);
-                    await conn.ExecuteAsync(
-                        "UPDATE class_offerings SET slots_taken = GREATEST(slots_taken - 1, 0) WHERE id = @cid",
-                        new { cid = req.ClassOfferingId.Value }, trans);
+                    sub.Status = "dropped";
+                    _jsonDb.SaveEnrolledSubjects(enrolledSubs);
                 }
-
-                if (new[] { "add", "change" }.Contains(req.RequestType) && req.TargetClassOfferingId.HasValue)
-                {
-                    await conn.ExecuteAsync(
-                        "INSERT INTO enrolled_subjects (enrollment_id, class_offering_id, status) VALUES (@eid, @tcid, 'enrolled')",
-                        new { eid = req.EnrollmentId, tcid = req.TargetClassOfferingId.Value }, trans);
-                    await conn.ExecuteAsync(
-                        "UPDATE class_offerings SET slots_taken = slots_taken + 1 WHERE id = @tcid",
-                        new { tcid = req.TargetClassOfferingId.Value }, trans);
-                }
-
-                await conn.ExecuteAsync(
-                    "UPDATE add_drop_requests SET status = 'approved', processed_at = NOW(), processed_by = @regId WHERE id = @id",
-                    new { regId = _db.CurrentUserId, id = request_id }, trans);
-
-                await trans.CommitAsync();
-
-                await _db.LogActivityAsync(req.StudentId, $"{req.RequestType} subject petition approved by registrar.");
-                TempData["FlashMessage"] = "Petition approved and class schedule updated.";
-                TempData["FlashType"] = "success";
             }
-            catch (Exception ex)
+
+            if (req.TargetOfferingId.HasValue && (req.RequestType == "add" || req.RequestType == "change"))
             {
-                await trans.RollbackAsync();
-                TempData["FlashMessage"] = "Error processing petition: " + ex.Message;
-                TempData["FlashType"] = "error";
+                var enrolledSubs = _jsonDb.GetEnrolledSubjects();
+                var offerings = _jsonDb.GetClassOfferings();
+                var targetOff = offerings.FirstOrDefault(o => o.Id == req.TargetOfferingId.Value);
+
+                if (targetOff != null)
+                {
+                    int nextId = (enrolledSubs.MaxBy(es => es.Id)?.Id ?? 0) + 1;
+                    enrolledSubs.Add(new CampusSystem.Data.Models.EnrolledSubjectRecord
+                    {
+                        Id = nextId,
+                        EnrollmentId = 1,
+                        StudentId = req.StudentId,
+                        ClassOfferingId = targetOff.Id,
+                        SubjectCode = targetOff.SubjectCode,
+                        SubjectTitle = targetOff.SubjectTitle,
+                        Units = targetOff.Units,
+                        Status = "enrolled"
+                    });
+                    _jsonDb.SaveEnrolledSubjects(enrolledSubs);
+                }
             }
+
+            TempData["FlashMessage"] = "Petition approved and class schedule updated.";
+            TempData["FlashType"] = "success";
         }
 
-        return RedirectToPage("/EnrollmentValidation", new { tab = "adddrop" });
+        return Task.FromResult<IActionResult>(RedirectToPage("/EnrollmentValidation", new { tab = "adddrop" }));
     }
 
-    public async Task<IActionResult> OnPostOverloadActionAsync(int request_id, string action)
+    public Task<IActionResult> OnPostOverloadActionAsync(int request_id, string action)
     {
         _db.EnsureRegistrarSession();
         var newStatus = action == "approve_overload" ? "approved" : "rejected";
-        var conn = _db.Connection;
 
-        var req = await conn.QueryFirstOrDefaultAsync<(int StudentId, string RequestType)>(
-            "SELECT student_id AS StudentId, request_type AS RequestType FROM overload_waiver_requests WHERE id = @id AND status = 'pending'",
-            new { id = request_id });
+        var overloads = _jsonDb.GetOverloadRequests();
+        var req = overloads.FirstOrDefault(r => r.Id == request_id);
 
-        if (req.StudentId > 0)
+        if (req != null)
         {
-            await conn.ExecuteAsync(
-                "UPDATE overload_waiver_requests SET status = @st, processed_at = NOW(), processed_by = @regId WHERE id = @id",
-                new { st = newStatus, regId = _db.CurrentUserId, id = request_id });
+            req.Status = newStatus;
+            req.ProcessedAt = DateTime.UtcNow;
+            _jsonDb.SaveOverloadRequests(overloads);
 
-            await _db.LogActivityAsync(req.StudentId, $"{req.RequestType} petition {newStatus} by registrar.");
             TempData["FlashMessage"] = $"{req.RequestType} petition {newStatus}.";
             TempData["FlashType"] = "success";
         }
@@ -333,6 +360,6 @@ public class EnrollmentValidationModel : PageModel
             TempData["FlashType"] = "error";
         }
 
-        return RedirectToPage("/EnrollmentValidation", new { tab = "overload" });
+        return Task.FromResult<IActionResult>(RedirectToPage("/EnrollmentValidation", new { tab = "overload" }));
     }
 }
