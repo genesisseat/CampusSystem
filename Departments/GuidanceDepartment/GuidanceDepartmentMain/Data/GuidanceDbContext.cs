@@ -13,7 +13,7 @@ public sealed class GuidanceDbContext(DbContextOptions<GuidanceDbContext> option
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Student>()
-            .ToTable("Students", "dbo")
+            .ToTable("Students", "dbo", table => table.ExcludeFromMigrations())
             .HasKey(student => student.Id);
 
         modelBuilder.Entity<GuidanceRequestRecord>()

@@ -45,7 +45,7 @@ namespace GuidanceDepartmentMain.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Students", "dbo");
+                    b.ToTable("Students", "dbo", t => t.ExcludeFromMigrations());
                 });
 
             modelBuilder.Entity("GuidanceDepartmentMain.Data.RefreshTokenRecord", b =>

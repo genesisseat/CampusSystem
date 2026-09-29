@@ -14,9 +14,6 @@ namespace GuidanceDepartmentMain.Migrations
             migrationBuilder.EnsureSchema(
                 name: "guidance");
 
-            migrationBuilder.EnsureSchema(
-                name: "dbo");
-
             migrationBuilder.CreateTable(
                 name: "GuidanceRequests",
                 schema: "guidance",
@@ -52,20 +49,6 @@ namespace GuidanceDepartmentMain.Migrations
                     table.PrimaryKey("PK_RefreshTokens", x => x.Token);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Students",
-                schema: "dbo",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StudentNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Students", x => x.Id);
-                });
         }
 
         /// <inheritdoc />
@@ -79,9 +62,6 @@ namespace GuidanceDepartmentMain.Migrations
                 name: "RefreshTokens",
                 schema: "guidance");
 
-            migrationBuilder.DropTable(
-                name: "Students",
-                schema: "dbo");
         }
     }
 }

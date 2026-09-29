@@ -118,17 +118,18 @@ builder.Services.AddDbContextFactory<GuidanceDbContext>(options =>
     options.UseSqlServer(campusConnection));
 ```
 
-This keeps the project aligned with the rest of the campus system while preserving department ownership. The Guidance pages can remain UI-first, but any live student data must be served through this shared-DB pattern.
+- `/index.html`: department overview and core module workspace hub
+- `/dashboard.html`: counselor operations dashboard with priority queue and live stats
+- `/students.html`: registered student directory with live campus database feed
+- `/triage.html`: counselor intake queue and 3-stage triage Kanban board
+- `/appointments.html`: appointment calendar and consultation slot picker
+- `/case-notes.html`: restricted-access confidential case notes panel
+- `/monitoring.html`: counselor-only student follow-up register with filters and caseload tracking
+- `/request.html`: guidance and counseling intake request form
+- `/resources.html`: student and counselor advising and wellness resources catalog
+- `/admin.html`: department routing, escalation thresholds, and inter-department referral settings
 
-- `/appointments.html`: appointment calendar and picker
-- `/case-notes.html`: restricted-access case notes panel
-- `/resources.html`: college and career resources list
-- `/dashboard.html`: counselor dashboard with local fixture data
-- `/monitoring.html`: counselor-only student follow-up register with local fixture data and filters
-- `/admin.html`: department routing and escalation settings preview
-
-
-The pages reuse `wwwroot/styles.css` and are linked from the Guidance home page. `wwwroot/prototype.js` supplies local fixture data and preview-only interactions for the dashboard, student monitoring register, triage queue, request form, case notes, and appointment slots. The monitoring page shows masked student references, programme, support signal, request, follow-up date, and assigned counselor; it is not a student-record system. The request form should remain aligned with the `StudentRequestService` DTO shape, but it must not submit until the owning team connects it to the approved contract. Case notes require real authorization and restricted storage before use. The dashboard, monitoring, and admin pages are visual prototypes only and must not be treated as department-scoped authorization or configuration.
+The Guidance UI is fully styled in the National University Lipa institutional design system (Navy `#0a1d4d`, Gold `#f2b807`, Inter typography, left sidebar navigation shell, status topbar with Academic Year indicators, and clean card/table layouts) aligned with the Registrar and Finance department systems. The pages reuse `wwwroot/styles.css` and are linked from the Guidance sidebar navigation. `wwwroot/prototype.js` supplies local fixture data and preview-only interactions for the dashboard, student monitoring register, triage queue, request form, case notes, and appointment slots. The monitoring page shows masked student references, programme, support signal, request, follow-up date, and assigned counselor; it is not a student-record system. The request form should remain aligned with the `StudentRequestService` DTO shape, but it must not submit until the owning team connects it to the approved contract. Case notes require real authorization and restricted storage before use. The dashboard, monitoring, and admin pages are visual prototypes only and must not be treated as department-scoped authorization or configuration.
 
 
 ## Change Rules
